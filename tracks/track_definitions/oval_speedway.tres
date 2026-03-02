@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tracks/track_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+track_name = "Oval Speedway"
+description = "A 1.2 km high-speed oval with banked turns and wide road. Long straights reward top speed and slipstream battles. Perfect for beginners."
+length_km = 1.2
+road_width = 16.0
+num_checkpoints = 4
+default_laps = 3
+difficulty = 1
+scene_path = "res://tracks/track_scenes/oval_speedway.tscn"
