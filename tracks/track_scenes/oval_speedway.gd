@@ -8,10 +8,11 @@ const TURN_RADIUS: float = 80.0
 const STRAIGHT_LENGTH: float = 350.0
 const HALF_STRAIGHT: float = 175.0
 const ROAD_WIDTH: float = 16.0
-const BANK_ANGLE: float = 0.2618  # ~15 degrees
-const NUM_SEGMENTS: int = 128
+const BANK_ANGLE: float = 0.105  # ~6 degrees
+const NUM_SEGMENTS: int = 256
 const BARRIER_HEIGHT: float = 1.5
 const BARRIER_WIDTH: float = 0.5
+const BARRIER_OFFSET: float = 2.0  # Gap between road edge and barrier
 const ROAD_Y: float = 0.15
 
 var num_checkpoints: int = 4
@@ -65,14 +66,16 @@ func _compute_point(s: float) -> Dictionary:
 		# Top turn — semicircle centered at (0, y, HALF_STRAIGHT)
 		var arc: float = s - s1
 		var angle: float = arc / TURN_RADIUS
+		var t_norm: float = angle / PI
+		bank = BANK_ANGLE * _bank_factor(t_norm)
+		# Raise center so inner edge stays at ROAD_Y
+		var bank_lift: float = sin(bank) * ROAD_WIDTH / 2.0
 		pos = Vector3(
 			TURN_RADIUS * cos(angle),
-			ROAD_Y,
+			ROAD_Y + bank_lift,
 			HALF_STRAIGHT + TURN_RADIUS * sin(angle)
 		)
 		fwd = Vector3(-sin(angle), 0.0, cos(angle))
-		var t_norm: float = angle / PI
-		bank = BANK_ANGLE * _bank_factor(t_norm)
 	elif s < s3:
 		# Left straight — heading south (-Z)
 		var d: float = s - s2
@@ -82,20 +85,22 @@ func _compute_point(s: float) -> Dictionary:
 		# Bottom turn — semicircle centered at (0, y, -HALF_STRAIGHT)
 		var arc: float = s - s3
 		var angle: float = PI + arc / TURN_RADIUS
+		var t_norm: float = (angle - PI) / PI
+		bank = BANK_ANGLE * _bank_factor(t_norm)
+		# Raise center so inner edge stays at ROAD_Y
+		var bank_lift: float = sin(bank) * ROAD_WIDTH / 2.0
 		pos = Vector3(
 			TURN_RADIUS * cos(angle),
-			ROAD_Y,
+			ROAD_Y + bank_lift,
 			-HALF_STRAIGHT + TURN_RADIUS * sin(angle)
 		)
 		fwd = Vector3(-sin(angle), 0.0, cos(angle))
-		var t_norm: float = (angle - PI) / PI
-		bank = BANK_ANGLE * _bank_factor(t_norm)
 
 	return {"position": pos, "forward": fwd.normalized(), "banking": bank}
 
 func _bank_factor(t: float) -> float:
-	## Smooth banking profile: ramp up first 15%, full through middle, ramp down last 15%.
-	return smoothstep(0.0, 0.15, t) * (1.0 - smoothstep(0.85, 1.0, t))
+	## Smooth banking profile: ramp up first 25%, full through middle, ramp down last 25%.
+	return smoothstep(0.0, 0.25, t) * (1.0 - smoothstep(0.75, 1.0, t))
 
 func _basis_facing(direction: Vector3) -> Basis:
 	## Returns a Basis that faces along the given direction (local -Z = direction).
@@ -112,7 +117,7 @@ func _get_banked_right(point: Dictionary) -> Vector3:
 	var right_flat: Vector3 = Vector3.UP.cross(fwd).normalized()
 	var banking: float = point.banking
 	if banking > 0.001:
-		return right_flat.rotated(fwd, -banking)
+		return right_flat.rotated(fwd, banking)
 	return right_flat
 
 # --- Road mesh ---
@@ -122,8 +127,9 @@ func _build_road_mesh(points: Array[Dictionary]) -> void:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
 	var road_mat := StandardMaterial3D.new()
-	road_mat.albedo_color = Color(0.2, 0.2, 0.22)
+	road_mat.albedo_color = Color(0.1, 0.1, 0.1)
 	road_mat.roughness = 0.85
+	road_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	st.set_material(road_mat)
 
 	var half_w: float = ROAD_WIDTH / 2.0
@@ -141,22 +147,29 @@ func _build_road_mesh(points: Array[Dictionary]) -> void:
 		var left_next: Vector3 = p_next.position - right_next * half_w
 		var right_next_v: Vector3 = p_next.position + right_next * half_w
 
-		# Triangle 1: left, left_next, right (CCW → normal up)
+		# Triangle 1
+		st.set_normal(Vector3.UP)
 		st.add_vertex(left_v)
+		st.set_normal(Vector3.UP)
 		st.add_vertex(left_next)
+		st.set_normal(Vector3.UP)
 		st.add_vertex(right_v)
 
-		# Triangle 2: right, left_next, right_next
+		# Triangle 2
+		st.set_normal(Vector3.UP)
 		st.add_vertex(right_v)
+		st.set_normal(Vector3.UP)
 		st.add_vertex(left_next)
+		st.set_normal(Vector3.UP)
 		st.add_vertex(right_next_v)
 
-	st.generate_normals()
 	var mesh: ArrayMesh = st.commit()
+	mesh.surface_set_material(0, road_mat)
 
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.name = "RoadMesh"
 	mesh_instance.mesh = mesh
+	mesh_instance.material_override = road_mat
 	add_child(mesh_instance)
 
 # --- Road collision ---
@@ -188,6 +201,7 @@ func _build_road_collision(points: Array[Dictionary]) -> void:
 
 	var shape := ConcavePolygonShape3D.new()
 	shape.set_faces(faces)
+	shape.backface_collision = true
 
 	var body := StaticBody3D.new()
 	body.name = "RoadCollision"
@@ -208,20 +222,28 @@ func _build_barrier_wall(points: Array[Dictionary], side: float, wall_name: Stri
 	var barrier_mat := StandardMaterial3D.new()
 	barrier_mat.roughness = 0.7
 	barrier_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	if side > 0:
-		barrier_mat.albedo_color = Color(0.65, 0.65, 0.65)
-	else:
-		barrier_mat.albedo_color = Color(0.6, 0.6, 0.65)
+	barrier_mat.vertex_color_use_as_albedo = true
 	st.set_material(barrier_mat)
 
 	var faces := PackedVector3Array()
-	var half_w: float = ROAD_WIDTH / 2.0
+	var half_w: float = ROAD_WIDTH / 2.0 + BARRIER_OFFSET
 	var up := Vector3.UP
+	var color_grey := Color(0.65, 0.65, 0.65)
+	var color_yellow := Color(0.95, 0.8, 0.1)
+	var color_black := Color(0.05, 0.05, 0.05)
 
 	for i in range(points.size()):
 		var next_i: int = (i + 1) % points.size()
 		var p: Dictionary = points[i]
 		var p_next: Dictionary = points[next_i]
+
+		# Determine color: grey on straights, yellow/black stripes in turns
+		var seg_color: Color
+		var in_turn: bool = p.banking > 0.001
+		if in_turn:
+			seg_color = color_yellow if (i % 4 < 2) else color_black
+		else:
+			seg_color = color_grey
 
 		var right: Vector3 = _get_banked_right(p)
 		var right_next: Vector3 = _get_banked_right(p_next)
@@ -232,12 +254,18 @@ func _build_barrier_wall(points: Array[Dictionary], side: float, wall_name: Stri
 		var top_next: Vector3 = base_next + up * BARRIER_HEIGHT
 
 		# Wall triangles
+		st.set_color(seg_color)
 		st.add_vertex(base)
+		st.set_color(seg_color)
 		st.add_vertex(base_next)
+		st.set_color(seg_color)
 		st.add_vertex(top)
 
+		st.set_color(seg_color)
 		st.add_vertex(top)
+		st.set_color(seg_color)
 		st.add_vertex(base_next)
+		st.set_color(seg_color)
 		st.add_vertex(top_next)
 
 		# Top cap
@@ -245,12 +273,18 @@ func _build_barrier_wall(points: Array[Dictionary], side: float, wall_name: Stri
 		var top_out: Vector3 = top + outward
 		var top_next_out: Vector3 = top_next + outward
 
+		st.set_color(seg_color)
 		st.add_vertex(top)
+		st.set_color(seg_color)
 		st.add_vertex(top_next)
+		st.set_color(seg_color)
 		st.add_vertex(top_out)
 
+		st.set_color(seg_color)
 		st.add_vertex(top_out)
+		st.set_color(seg_color)
 		st.add_vertex(top_next)
+		st.set_color(seg_color)
 		st.add_vertex(top_next_out)
 
 		# Collision faces (wall + top cap)
@@ -293,26 +327,30 @@ func _build_barrier_wall(points: Array[Dictionary], side: float, wall_name: Stri
 # --- Ground ---
 
 func _build_ground() -> void:
+	# Visual grass surface — thin sheet just below road level, no collision
+	var ground_mesh := CSGBox3D.new()
+	ground_mesh.name = "GroundMesh"
+	ground_mesh.size = Vector3(500, 0.05, 700)
+	ground_mesh.position = Vector3(0, -0.025, 0)
+	ground_mesh.use_collision = false
+	var ground_mat := StandardMaterial3D.new()
+	ground_mat.albedo_color = Color(0.25, 0.45, 0.2)
+	ground_mat.roughness = 0.95
+	ground_mesh.material = ground_mat
+	add_child(ground_mesh)
+
+	# Safety-net collision below the banked road (top at Y=-1.5)
 	var ground_body := StaticBody3D.new()
 	ground_body.name = "Ground"
 	ground_body.collision_layer = 1
 	ground_body.collision_mask = 0
-	ground_body.position = Vector3(0, -0.5, 0)
+	ground_body.position = Vector3(0, -2.0, 0)
 
 	var box := BoxShape3D.new()
 	box.size = Vector3(500, 1, 700)
 	var col := CollisionShape3D.new()
 	col.shape = box
 	ground_body.add_child(col)
-
-	var ground_mesh := CSGBox3D.new()
-	ground_mesh.size = Vector3(500, 1, 700)
-	ground_mesh.use_collision = false
-	var ground_mat := StandardMaterial3D.new()
-	ground_mat.albedo_color = Color(0.25, 0.45, 0.2)
-	ground_mat.roughness = 0.95
-	ground_mesh.material = ground_mat
-	ground_body.add_child(ground_mesh)
 
 	add_child(ground_body)
 
