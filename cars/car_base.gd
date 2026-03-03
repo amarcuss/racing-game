@@ -23,6 +23,7 @@ var throttle_input: float = 0.0
 var brake_input: float = 0.0
 var steering_input: float = 0.0
 var handbrake_input: bool = false
+var is_reversing: bool = false
 
 # Slipstream
 var slipstream_active: bool = false
@@ -34,6 +35,7 @@ const STUCK_TIMEOUT: float = 3.0
 const SLIPSTREAM_RANGE: float = 20.0
 const SLIPSTREAM_DRAG_REDUCTION: float = 0.3
 const SLIPSTREAM_MIN_SPEED: float = 100.0
+const REVERSE_FORCE_FACTOR: float = 0.3
 
 func _ready() -> void:
 	_find_wheels()
@@ -97,6 +99,7 @@ func _physics_process(delta: float) -> void:
 	current_speed_kph = linear_velocity.length() * 3.6
 	var speed_ratio: float = current_speed_kph / car_data.max_speed_kph
 
+	_update_reverse_state()
 	_apply_engine_force(speed_ratio)
 	_apply_braking()
 	_apply_steering()
@@ -107,7 +110,20 @@ func _physics_process(delta: float) -> void:
 	_apply_anti_flip(delta)
 	_check_stuck(delta)
 
+func _update_reverse_state() -> void:
+	var local_vel: Vector3 = global_transform.basis.inverse() * linear_velocity
+	var forward_speed: float = -local_vel.z * 3.6  # positive = moving forward
+	if brake_input > 0.0 and throttle_input == 0.0 and forward_speed < 2.0:
+		is_reversing = true
+	elif throttle_input > 0.0 or brake_input == 0.0:
+		is_reversing = false
+
 func _apply_engine_force(speed_ratio: float) -> void:
+	if is_reversing:
+		var force: float = car_data.torque_low_rpm * brake_input * REVERSE_FORCE_FACTOR
+		engine_force = force  # positive = +Z = backward
+		return
+
 	var torque: float = car_data.get_torque_at_speed_ratio(speed_ratio) * throttle_input
 
 	if speed_ratio > 0.95:
@@ -116,6 +132,9 @@ func _apply_engine_force(speed_ratio: float) -> void:
 	engine_force = -torque
 
 func _apply_braking() -> void:
+	if is_reversing:
+		brake = 0.0
+		return
 	if handbrake_input:
 		wheel_rl.wheel_friction_slip = car_data.drift_friction_slip * 0.5
 		wheel_rr.wheel_friction_slip = car_data.drift_friction_slip * 0.5
@@ -250,164 +269,14 @@ func _build_car_mesh() -> void:
 	if not car_data or not body_mesh:
 		return
 
-	for child in body_mesh.get_children():
-		child.queue_free()
+	var mesh_script: GDScript
+	match car_data.tier:
+		2:
+			mesh_script = load("res://cars/car_meshes/coupe_mesh.gd")
+		3:
+			mesh_script = load("res://cars/car_meshes/muscle_mesh.gd")
+		_:
+			mesh_script = load("res://cars/car_meshes/sedan_mesh.gd")
 
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = car_data.body_color
-	mat.metallic = 0.6
-	mat.roughness = 0.25
-
-	var mat_secondary := StandardMaterial3D.new()
-	mat_secondary.albedo_color = car_data.secondary_color
-	mat_secondary.metallic = 0.5
-	mat_secondary.roughness = 0.3
-
-	var mat_chrome := StandardMaterial3D.new()
-	mat_chrome.albedo_color = Color(0.85, 0.85, 0.85)
-	mat_chrome.metallic = 1.0
-	mat_chrome.roughness = 0.05
-
-	var mat_headlight := StandardMaterial3D.new()
-	mat_headlight.albedo_color = Color(1.0, 0.95, 0.8)
-	mat_headlight.emission_enabled = true
-	mat_headlight.emission = Color(1.0, 0.95, 0.8)
-	mat_headlight.emission_energy_multiplier = 2.0
-
-	var mat_taillight := StandardMaterial3D.new()
-	mat_taillight.albedo_color = Color(1.0, 0.1, 0.1)
-	mat_taillight.emission_enabled = true
-	mat_taillight.emission = Color(1.0, 0.0, 0.0)
-	mat_taillight.emission_energy_multiplier = 1.5
-
-	var w: float = car_data.body_width
-	var l: float = car_data.body_length
-	var h: float = car_data.body_height
-	var ch: float = car_data.cabin_height
-
-	# Main body
-	var body := CSGBox3D.new()
-	body.size = Vector3(w, h, l)
-	body.position = Vector3(0, h * 0.5, 0)
-	body.material = mat
-	body.use_collision = false
-	body_mesh.add_child(body)
-
-	# Lower body (secondary color)
-	var lower := CSGBox3D.new()
-	lower.size = Vector3(w + 0.02, h * 0.35, l + 0.02)
-	lower.position = Vector3(0, h * 0.175, 0)
-	lower.material = mat_secondary
-	lower.use_collision = false
-	body_mesh.add_child(lower)
-
-	# Cabin
-	var cabin := CSGBox3D.new()
-	cabin.size = Vector3(w * 0.85, ch, l * 0.4)
-	cabin.position = Vector3(0, h + ch * 0.5, car_data.cabin_offset_z)
-	cabin.material = mat_secondary
-	cabin.use_collision = false
-	body_mesh.add_child(cabin)
-
-	# Windshield
-	var mat_glass := StandardMaterial3D.new()
-	mat_glass.albedo_color = Color(0.1, 0.12, 0.18, 0.7)
-	mat_glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-
-	var windshield := CSGBox3D.new()
-	windshield.size = Vector3(w * 0.83, ch * 0.8, 0.05)
-	windshield.position = Vector3(0, h + ch * 0.55, car_data.cabin_offset_z - l * 0.2 + 0.02)
-	windshield.material = mat_glass
-	windshield.use_collision = false
-	body_mesh.add_child(windshield)
-
-	# Rear window
-	var rear_window := CSGBox3D.new()
-	rear_window.size = Vector3(w * 0.83, ch * 0.7, 0.05)
-	rear_window.position = Vector3(0, h + ch * 0.5, car_data.cabin_offset_z + l * 0.2 - 0.02)
-	rear_window.material = mat_glass
-	rear_window.use_collision = false
-	body_mesh.add_child(rear_window)
-
-	# Chrome grille (front)
-	var grille := CSGBox3D.new()
-	grille.size = Vector3(w * 0.6, h * 0.3, 0.05)
-	grille.position = Vector3(0, h * 0.35, -l * 0.5 - 0.02)
-	grille.material = mat_chrome
-	grille.use_collision = false
-	body_mesh.add_child(grille)
-
-	# Headlights
-	for side in [-1.0, 1.0]:
-		var headlight := CSGBox3D.new()
-		headlight.size = Vector3(w * 0.15, h * 0.15, 0.06)
-		headlight.position = Vector3(side * w * 0.35, h * 0.55, -l * 0.5 - 0.02)
-		headlight.material = mat_headlight
-		headlight.use_collision = false
-		body_mesh.add_child(headlight)
-
-	# Taillights
-	for side in [-1.0, 1.0]:
-		var taillight := CSGBox3D.new()
-		taillight.size = Vector3(w * 0.2, h * 0.12, 0.06)
-		taillight.position = Vector3(side * w * 0.3, h * 0.5, l * 0.5 + 0.02)
-		taillight.material = mat_taillight
-		taillight.use_collision = false
-		body_mesh.add_child(taillight)
-
-	# Hood scoop
-	if car_data.hood_scoop:
-		var scoop := CSGBox3D.new()
-		scoop.size = Vector3(w * 0.2, 0.1, 0.3)
-		scoop.position = Vector3(0, h + 0.05, -l * 0.2)
-		scoop.material = mat_secondary
-		scoop.use_collision = false
-		body_mesh.add_child(scoop)
-
-	# Rear spoiler
-	if car_data.rear_spoiler:
-		var spoiler_h: float = car_data.spoiler_height if car_data.spoiler_height > 0.0 else 0.15
-		for side in [-1.0, 1.0]:
-			var post := CSGBox3D.new()
-			post.size = Vector3(0.05, spoiler_h, 0.05)
-			post.position = Vector3(side * w * 0.35, h + ch + spoiler_h * 0.5, l * 0.35)
-			post.material = mat_secondary
-			post.use_collision = false
-			body_mesh.add_child(post)
-		var wing := CSGBox3D.new()
-		wing.size = Vector3(w * 0.9, 0.04, 0.2)
-		wing.position = Vector3(0, h + ch + spoiler_h, l * 0.35)
-		wing.material = mat_secondary
-		wing.use_collision = false
-		body_mesh.add_child(wing)
-
-	# Wheel visuals
-	var mat_wheel := StandardMaterial3D.new()
-	mat_wheel.albedo_color = Color(0.15, 0.15, 0.15)
-	mat_wheel.metallic = 0.3
-	mat_wheel.roughness = 0.8
-
-	var mat_rim := StandardMaterial3D.new()
-	mat_rim.albedo_color = Color(0.7, 0.7, 0.7)
-	mat_rim.metallic = 0.9
-	mat_rim.roughness = 0.1
-
-	var wheels: Array = [wheel_fl, wheel_fr, wheel_rl, wheel_rr]
-	for i in range(4):
-		var wheel_vis := CSGCylinder3D.new()
-		wheel_vis.radius = car_data.wheel_radius
-		wheel_vis.height = 0.2
-		wheel_vis.sides = 16
-		wheel_vis.material = mat_wheel
-		wheel_vis.use_collision = false
-		wheel_vis.rotation.z = PI / 2.0
-		wheels[i].add_child(wheel_vis)
-
-		var rim := CSGCylinder3D.new()
-		rim.radius = car_data.wheel_radius * 0.6
-		rim.height = 0.22
-		rim.sides = 8
-		rim.material = mat_rim
-		rim.use_collision = false
-		rim.rotation.z = PI / 2.0
-		wheels[i].add_child(rim)
+	var wheels_arr: Array = [wheel_fl, wheel_fr, wheel_rl, wheel_rr]
+	mesh_script.build(body_mesh, car_data, wheels_arr)

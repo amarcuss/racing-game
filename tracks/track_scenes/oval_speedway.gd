@@ -12,11 +12,12 @@ const BANK_ANGLE: float = 0.105  # ~6 degrees
 const NUM_SEGMENTS: int = 256
 const BARRIER_HEIGHT: float = 1.5
 const BARRIER_WIDTH: float = 0.5
-const BARRIER_OFFSET: float = 2.0  # Gap between road edge and barrier
+const BARRIER_OFFSET: float = 0.0  # No gap — barriers flush with road edge
 const ROAD_Y: float = 0.15
 
 var num_checkpoints: int = 4
 var perimeter: float
+var ai_path: Path3D
 
 func _ready() -> void:
 	perimeter = 2.0 * STRAIGHT_LENGTH + 2.0 * PI * TURN_RADIUS
@@ -28,6 +29,7 @@ func _ready() -> void:
 	_build_ground()
 	_build_checkpoints()
 	_build_start_finish_visual()
+	_build_ai_path()
 	_build_environment()
 
 func get_spawn_transform(index: int) -> Transform3D:
@@ -39,6 +41,12 @@ func get_spawn_transform(index: int) -> Transform3D:
 
 func get_num_checkpoints() -> int:
 	return num_checkpoints
+
+func get_ai_path() -> Path3D:
+	return ai_path
+
+func get_perimeter() -> float:
+	return perimeter
 
 # --- Track point generation ---
 
@@ -440,6 +448,20 @@ func _build_start_finish_visual() -> void:
 	beam_mat.roughness = 0.3
 	beam.material = beam_mat
 	add_child(beam)
+
+# --- AI Path ---
+
+func _build_ai_path() -> void:
+	var curve := Curve3D.new()
+	var num_samples: int = 64
+	for i in range(num_samples):
+		var s: float = float(i) / float(num_samples) * perimeter
+		var p: Dictionary = _compute_point(s)
+		curve.add_point(p.position + Vector3.UP * 0.5)
+	ai_path = Path3D.new()
+	ai_path.name = "AIPath"
+	ai_path.curve = curve
+	add_child(ai_path)
 
 # --- Environment ---
 

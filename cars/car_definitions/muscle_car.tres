@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="CarData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://cars/car_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+car_name = "Muscle Car"
+tier = 3
+price = 4000
+description = "A heavyweight rear-wheel-drive bruiser. Massive low-end torque and heavy oversteer demand respect."
+max_speed_kph = 250.0
+drive_type = 1
+mass_kg = 1400.0
+torque_low_rpm = 5500.0
+torque_peak_rpm = 7000.0
+torque_high_rpm = 4000.0
+drag_coefficient = 0.42
+downforce_coefficient = 0.04
+brake_force = 42.0
+brake_bias = 0.6
+weight_transfer_factor = 0.2
+drift_friction_slip = 1.3
+drift_steer_multiplier = 1.4
+normal_friction_slip = 2.4
+suspension_rest_length = 0.22
+suspension_stiffness = 42.0
+suspension_travel = 0.18
+damping_compression = 1.1
+damping_relaxation = 1.4
+wheel_radius = 0.37
+max_steering_angle = 0.35
+body_color = Color(0.08, 0.08, 0.08, 1)
+secondary_color = Color(0.04, 0.04, 0.04, 1)
+body_width = 1.95
+body_length = 4.5
+body_height = 0.65
+cabin_height = 0.55
+cabin_offset_z = 0.05
+hood_scoop = true
+rear_spoiler = false
+spoiler_height = 0.0
