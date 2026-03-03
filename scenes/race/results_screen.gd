@@ -134,6 +134,20 @@ func show_results(car: Node, finish_position: int = 1) -> void:
 	credits_target = CREDITS_BY_POSITION[cred_index]
 	credits_label.text = "CREDITS   0"
 
+	# Save credits and record result
+	SaveManager.add_credits(credits_target)
+	var result_dict: Dictionary = {
+		"track_index": GameManager.selected_track_index,
+		"car_index": GameManager.selected_car_index,
+		"finish_position": finish_position,
+		"total_cars": RaceManager.registered_cars.size(),
+		"total_time": RaceManager.race_time,
+		"best_lap_time": best,
+		"credits_earned": credits_target,
+		"laps": GameManager.race_laps,
+	}
+	SaveManager.record_race_result(result_dict)
+
 	# Slide up animation
 	container.position.y = 1080
 	var tween := create_tween()
@@ -157,9 +171,8 @@ func _on_next_race() -> void:
 	get_tree().reload_current_scene()
 
 func _on_main_menu() -> void:
-	RaceManager.reset()
 	menu_pressed.emit()
-	get_tree().reload_current_scene()
+	GameManager.go_to_main_menu()
 
 # --- Helpers ---
 

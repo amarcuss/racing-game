@@ -88,9 +88,7 @@ func _on_restart() -> void:
 	get_tree().reload_current_scene()
 
 func _on_main_menu() -> void:
-	get_tree().paused = false
-	RaceManager.reset()
-	get_tree().reload_current_scene()
+	GameManager.go_to_main_menu()
 
 func _create_button(text: String, bg_color: Color) -> Button:
 	var btn := Button.new()

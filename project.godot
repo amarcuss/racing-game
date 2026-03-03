@@ -5,12 +5,13 @@
 [application]
 
 config/name="Velocity"
-run/main_scene="res://scenes/race/race_scene.tscn"
+run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.4")
 
 [autoload]
 
 InputManager="*res://autoloads/input_manager.gd"
+SaveManager="*res://autoloads/save_manager.gd"
 GameManager="*res://autoloads/game_manager.gd"
 RaceManager="*res://autoloads/race_manager.gd"
 

@@ -14,9 +14,6 @@ var results_screen: CanvasLayer
 var pause_menu: CanvasLayer
 var is_paused: bool = false
 
-const AI_COUNT: int = 5
-const AI_CAR_INDICES: Array[int] = [0, 1, 2]
-
 func _ready() -> void:
 	_load_track()
 	_spawn_player()
@@ -25,7 +22,7 @@ func _ready() -> void:
 	_setup_ui()
 
 	var track_checkpoints: int = track_node.get_num_checkpoints()
-	RaceManager.setup_race(3, track_checkpoints)
+	RaceManager.setup_race(GameManager.race_laps, track_checkpoints)
 
 	# Wire track path for position tracking
 	if track_node.has_method("get_ai_path") and track_node.has_method("get_perimeter"):
@@ -80,15 +77,21 @@ func _spawn_ai_cars() -> void:
 	if track_node.has_method("get_perimeter"):
 		track_perim = track_node.get_perimeter()
 
-	# Difficulty mix
-	var difficulties: Array = [0, 1, 1, 2, 2]  # EASY, MEDIUM, MEDIUM, HARD, HARD
+	# Build difficulty mix from GameManager.ai_difficulty with ±1 variation
+	var base_diff: int = GameManager.ai_difficulty
+	var ai_total: int = GameManager.ai_count
+	var difficulties: Array = []
+	for i in range(ai_total):
+		var d: int = base_diff + (randi() % 3) - 1  # -1, 0, or +1
+		difficulties.append(clampi(d, 0, 2))
 	difficulties.shuffle()
 
-	for i in range(AI_COUNT):
+	for i in range(ai_total):
 		var ai_car: VehicleBody3D = car_scene.instantiate()
 
-		# Pick a random car definition
-		var car_index: int = AI_CAR_INDICES[randi() % AI_CAR_INDICES.size()]
+		# Pick a random car definition from available cars
+		var ai_car_indices: Array[int] = [0, 1, 2]
+		var car_index: int = ai_car_indices[randi() % ai_car_indices.size()]
 		ai_car.car_data = GameManager.get_car_data(car_index)
 		if ai_path:
 			ai_car.track_path = ai_path
