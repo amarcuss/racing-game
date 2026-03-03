@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tracks/track_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+track_name = "Mountain Circuit"
+description = "A 2.5 km technical winding road through forested hills with 40m elevation change. Hairpin switchbacks, esses, and a fast ridgeline sweeper test handling and braking."
+length_km = 2.5
+road_width = 10.0
+num_checkpoints = 8
+default_laps = 3
+difficulty = 2
+scene_path = "res://tracks/track_scenes/mountain_circuit.tscn"

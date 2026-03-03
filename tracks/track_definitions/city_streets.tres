@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tracks/track_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+track_name = "City Streets"
+description = "A 1.8 km night circuit through city blocks with tight 90-degree corners, a chicane through a plaza, and narrow roads lined with concrete walls. No runoff — hit the wall and lose time."
+length_km = 1.8
+road_width = 8.0
+num_checkpoints = 6
+default_laps = 3
+difficulty = 3
+scene_path = "res://tracks/track_scenes/city_streets.tscn"

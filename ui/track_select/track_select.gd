@@ -117,7 +117,7 @@ func _create_track_card(index: int) -> Button:
 	card.custom_minimum_size = Vector2(460, 380)
 
 	var track_data: Resource = GameManager.get_track_data(index)
-	var is_coming_soon: bool = track_data == null or index > 0
+	var is_available: bool = track_data != null
 
 	var color: Color = TRACK_COLORS[index] if index < TRACK_COLORS.size() else TRACK_COLORS[0]
 
@@ -154,17 +154,16 @@ func _create_track_card(index: int) -> Button:
 	sb_pressed.content_margin_bottom = 20
 	card.add_theme_stylebox_override("pressed", sb_pressed)
 
-	if is_coming_soon and index > 0:
-		var names := ["", "Mountain Circuit", "City Streets"]
-		card.text = "%s\n\nCOMING SOON" % names[index]
-		card.add_theme_font_size_override("font_size", 22)
-		card.add_theme_color_override("font_color", TEXT_SECONDARY)
-		card.disabled = true
-	else:
+	if is_available:
 		card.text = track_data.track_name
 		card.add_theme_font_size_override("font_size", 24)
 		card.add_theme_color_override("font_color", TEXT_PRIMARY)
 		card.pressed.connect(_select_track.bind(index))
+	else:
+		card.text = "COMING SOON"
+		card.add_theme_font_size_override("font_size", 22)
+		card.add_theme_color_override("font_color", TEXT_SECONDARY)
+		card.disabled = true
 
 	return card
 
