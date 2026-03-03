@@ -25,13 +25,16 @@ var steering_input: float = 0.0
 var handbrake_input: bool = false
 var is_reversing: bool = false
 
+# Track path for reset
+var track_path: Path3D
+
 # Slipstream
 var slipstream_active: bool = false
 var slipstream_ray: RayCast3D
 
 const DRIFT_SLIP_THRESHOLD: float = 0.3
 const DRIFT_RECOVERY_TIME: float = 0.5
-const STUCK_TIMEOUT: float = 3.0
+const STUCK_TIMEOUT: float = 2.0
 const SLIPSTREAM_RANGE: float = 20.0
 const SLIPSTREAM_DRAG_REDUCTION: float = 0.3
 const SLIPSTREAM_MIN_SPEED: float = 100.0
@@ -250,14 +253,36 @@ func _check_stuck(delta: float) -> void:
 	else:
 		stuck_timer = 0.0
 
+	if stuck_timer >= STUCK_TIMEOUT:
+		reset_to_track()
+
 	if global_position.y < -10.0:
 		reset_to_track()
 
 func reset_to_track() -> void:
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
-	global_position.y = 2.0
 	stuck_timer = 0.0
+
+	if track_path and track_path.curve and track_path.curve.point_count >= 2:
+		var curve: Curve3D = track_path.curve
+		var curve_length: float = curve.get_baked_length()
+		var offset: float = curve.get_closest_offset(global_position)
+		var pos: Vector3 = curve.sample_baked(offset) + Vector3.UP * 1.5
+
+		# Get forward direction from curve
+		var ahead_offset: float = fposmod(offset + 2.0, curve_length)
+		var ahead_pos: Vector3 = curve.sample_baked(ahead_offset)
+		var forward: Vector3 = (ahead_pos - pos).normalized()
+		forward.y = 0.0
+		forward = forward.normalized()
+
+		var right: Vector3 = Vector3.UP.cross(forward).normalized()
+		var up: Vector3 = forward.cross(right).normalized()
+		var basis := Basis(right, up, -forward)
+		global_transform = Transform3D(basis, pos)
+	else:
+		global_position.y = 2.0
 
 func set_inputs(throttle: float, braking: float, steer: float, handbrake: bool) -> void:
 	throttle_input = throttle

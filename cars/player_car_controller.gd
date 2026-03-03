@@ -13,6 +13,10 @@ func _physics_process(_delta: float) -> void:
 	if not car or not car.has_method("set_inputs"):
 		return
 
+	if RaceManager.state != RaceManager.RaceState.RACING:
+		car.set_inputs(0.0, 0.0, 0.0, false)
+		return
+
 	var throttle: float = InputManager.get_acceleration(player_index)
 	var braking: float = InputManager.get_brake(player_index)
 	var steer: float = InputManager.get_steering(player_index)

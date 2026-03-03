@@ -56,6 +56,8 @@ func _spawn_player() -> void:
 	var car_scene: PackedScene = preload("res://cars/car_base.tscn")
 	player_car = car_scene.instantiate()
 	player_car.car_data = GameManager.get_selected_car_data()
+	if track_node.has_method("get_ai_path"):
+		player_car.track_path = track_node.get_ai_path()
 
 	# Set transform BEFORE adding to tree — VehicleBody3D ignores transform changes after
 	var spawn: Transform3D = track_node.get_spawn_transform(0)
@@ -88,6 +90,8 @@ func _spawn_ai_cars() -> void:
 		# Pick a random car definition
 		var car_index: int = AI_CAR_INDICES[randi() % AI_CAR_INDICES.size()]
 		ai_car.car_data = GameManager.get_car_data(car_index)
+		if ai_path:
+			ai_car.track_path = ai_path
 
 		# Set transform BEFORE add_child
 		var spawn: Transform3D = track_node.get_spawn_transform(i + 1)
