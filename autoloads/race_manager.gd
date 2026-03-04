@@ -37,6 +37,7 @@ var position_update_timer: float = 0.0
 # Track path for progress calculation
 var track_path: Path3D
 var track_perimeter: float = 0.0
+var start_finish_frac: float = 0.0
 
 func setup_race(laps: int, checkpoints: int) -> void:
 	total_laps = laps
@@ -58,12 +59,21 @@ func setup_race(laps: int, checkpoints: int) -> void:
 	position_update_timer = 0.0
 	track_path = null
 	track_perimeter = 0.0
+	start_finish_frac = 0.0
 	state = RaceState.PRE_RACE
 	race_state_changed.emit(RaceState.PRE_RACE)
 
 func set_track_path(path: Path3D, perim: float) -> void:
 	track_path = path
 	track_perimeter = perim
+	start_finish_frac = 0.0
+
+func set_start_finish_position(pos: Vector3) -> void:
+	## Compute start/finish fraction from a world position (e.g. checkpoint 0).
+	if track_path and track_path.curve and track_path.curve.get_baked_length() > 0.0:
+		var curve_len: float = track_path.curve.get_baked_length()
+		var offset: float = track_path.curve.get_closest_offset(pos)
+		start_finish_frac = offset / curve_len
 
 func register_car(car: Node) -> void:
 	registered_cars.append(car)
@@ -227,9 +237,8 @@ func _get_track_fraction(car: Node) -> float:
 		return 0.0
 	var curve_len: float = track_path.curve.get_baked_length()
 	var offset: float = track_path.curve.get_closest_offset(car.global_position)
-	# Shift so start/finish line (roughly 14.5% into the curve) becomes fraction 0.0
-	# This prevents position jumps at the curve origin wrap point
-	var start_finish_frac: float = 0.145
+	# Shift so start/finish line becomes fraction 0.0
+	# Prevents position jumps at the curve origin wrap point
 	var shifted: float = fposmod((offset / curve_len) - start_finish_frac, 1.0)
 	return shifted
 

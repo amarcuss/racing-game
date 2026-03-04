@@ -28,6 +28,11 @@ func _ready() -> void:
 	if track_node.has_method("get_ai_path") and track_node.has_method("get_perimeter"):
 		RaceManager.set_track_path(track_node.get_ai_path(), track_node.get_perimeter())
 
+	# Set start/finish position for accurate position tracking
+	var cp0: Node = track_node.find_child("Checkpoint0")
+	if cp0:
+		RaceManager.set_start_finish_position(cp0.global_position)
+
 	RaceManager.register_car(player_car)
 	for ai_car in ai_cars:
 		RaceManager.register_car(ai_car)

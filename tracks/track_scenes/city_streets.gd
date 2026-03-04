@@ -94,13 +94,17 @@ func _get_waypoints() -> Array[Dictionary]:
 	pts.append({"x": -5.0, "z": 180.0, "y": 0.0})
 	pts.append({"x": -5.0, "z": 150.0, "y": 0.0})
 
-	# Short south section
+	# South section sweeping west then east back to start
 	pts.append({"x": -5.0, "z": 100.0, "y": 0.0})
+	pts.append({"x": -20.0, "z": 60.0, "y": 0.0})
+	pts.append({"x": -50.0, "z": 30.0, "y": 0.0})
+	pts.append({"x": -80.0, "z": 10.0, "y": 0.0})
+	pts.append({"x": -90.0, "z": -15.0, "y": 0.0})
+	pts.append({"x": -70.0, "z": -20.0, "y": 0.0})
 
-	# Turn heading east back to start
-	pts.append({"x": -5.0, "z": 50.0, "y": 0.0})
-	pts.append({"x": -5.0, "z": 20.0, "y": 0.0})
-	pts.append({"x": -5.0, "z": 5.0, "y": 0.0})
+	# Straight approach heading east at z=0 (collinear with start)
+	pts.append({"x": -40.0, "z": -10.0, "y": 0.0})
+	pts.append({"x": -20.0, "z": -3.0, "y": 0.0})
 
 	return pts
 
@@ -388,8 +392,8 @@ func _build_wall_side(points: Array[Dictionary], side: float, wall_name: String)
 func _build_ground() -> void:
 	var ground_mesh := CSGBox3D.new()
 	ground_mesh.name = "GroundMesh"
-	ground_mesh.size = Vector3(400, 0.05, 400)
-	ground_mesh.position = Vector3(110, -0.025, 100)
+	ground_mesh.size = Vector3(500, 0.05, 450)
+	ground_mesh.position = Vector3(70, -0.025, 95)
 	ground_mesh.use_collision = false
 	var ground_mat := StandardMaterial3D.new()
 	ground_mat.albedo_color = Color(0.05, 0.05, 0.06)
@@ -401,10 +405,10 @@ func _build_ground() -> void:
 	ground_body.name = "Ground"
 	ground_body.collision_layer = 1
 	ground_body.collision_mask = 0
-	ground_body.position = Vector3(110, -2.0, 100)
+	ground_body.position = Vector3(70, -2.0, 95)
 
 	var box := BoxShape3D.new()
-	box.size = Vector3(400, 1, 400)
+	box.size = Vector3(500, 1, 450)
 	var col := CollisionShape3D.new()
 	col.shape = box
 	ground_body.add_child(col)
@@ -520,7 +524,7 @@ func _build_buildings(points: Array[Dictionary]) -> void:
 		for side_val in [-1.0, 1.0]:
 			if rng.randf() > 0.7:
 				continue
-			var offset: float = ROAD_WIDTH / 2.0 + WALL_WIDTH + 2.0 + rng.randf() * 5.0
+			var offset: float = ROAD_WIDTH / 2.0 + WALL_WIDTH + 10.0 + rng.randf() * 8.0
 			var bldg_pos: Vector3 = p.position + right * side_val * offset
 			_add_building(bldg_pos, rng)
 

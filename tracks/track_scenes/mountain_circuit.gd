@@ -92,16 +92,16 @@ func _get_waypoints() -> Array[Dictionary]:
 	pts.append({"x": -260.0, "z": 190.0, "y": 25.0})
 	pts.append({"x": -240.0, "z": 140.0, "y": 18.0})
 
-	# Second hairpin left
-	pts.append({"x": -200.0, "z": 100.0, "y": 14.0})
-	pts.append({"x": -220.0, "z": 60.0, "y": 10.0})
-	pts.append({"x": -250.0, "z": 80.0, "y": 8.0})
+	# Wide sweeping left turn downhill (replaces tight hairpin)
+	pts.append({"x": -210.0, "z": 90.0, "y": 12.0})
+	pts.append({"x": -220.0, "z": 40.0, "y": 7.0})
 
-	# Long downhill back towards start
-	pts.append({"x": -230.0, "z": 30.0, "y": 5.0})
-	pts.append({"x": -180.0, "z": -10.0, "y": 3.0})
-	pts.append({"x": -100.0, "z": -20.0, "y": 1.0})
-	pts.append({"x": -40.0, "z": -10.0, "y": 0.5})
+	# Long downhill sweeping south then east, approaching start from below
+	pts.append({"x": -200.0, "z": -10.0, "y": 4.0})
+	pts.append({"x": -140.0, "z": -50.0, "y": 2.0})
+	pts.append({"x": -70.0, "z": -75.0, "y": 1.0})
+	pts.append({"x": 0.0, "z": -80.0, "y": 0.5})
+	pts.append({"x": 0.0, "z": -40.0, "y": 0.2})
 
 	return pts
 
@@ -517,8 +517,8 @@ func _build_scenery(points: Array[Dictionary]) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42  # Deterministic placement
 
-	# Place trees alongside the road
-	for i in range(0, points.size(), 8):
+	# Place trees alongside the road (every 16th point to limit CSG node count)
+	for i in range(0, points.size(), 16):
 		var p: Dictionary = points[i]
 		var right: Vector3 = _get_right(p)
 
@@ -555,13 +555,13 @@ func _add_pine_tree(pos: Vector3, rng: RandomNumberGenerator) -> void:
 	trunk.material = trunk_mat
 	add_child(trunk)
 
-	# Canopy — stacked cones (use cylinders with top radius 0)
+	# Canopy — stacked cones
 	var canopy_base: float = pos.y + trunk.height
-	for layer in range(3):
+	for layer in range(2):
 		var cone := CSGCylinder3D.new()
-		cone.radius = (1.8 - float(layer) * 0.5) * (0.8 + rng.randf() * 0.4)
-		cone.height = tree_height * 0.25
-		cone.position = Vector3(pos.x, canopy_base + float(layer) * tree_height * 0.18, pos.z)
+		cone.radius = (2.0 - float(layer) * 0.7) * (0.8 + rng.randf() * 0.4)
+		cone.height = tree_height * 0.35
+		cone.position = Vector3(pos.x, canopy_base + float(layer) * tree_height * 0.22, pos.z)
 		cone.use_collision = false
 		var canopy_mat := StandardMaterial3D.new()
 		canopy_mat.albedo_color = Color(0.1, 0.3 + rng.randf() * 0.1, 0.08)

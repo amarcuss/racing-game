@@ -277,9 +277,10 @@ func reset_to_track() -> void:
 		forward.y = 0.0
 		forward = forward.normalized()
 
-		var right: Vector3 = Vector3.UP.cross(forward).normalized()
-		var up: Vector3 = forward.cross(right).normalized()
-		var basis := Basis(right, up, -forward)
+		var z_axis: Vector3 = -forward
+		var x_axis: Vector3 = Vector3.UP.cross(z_axis).normalized()
+		var y_axis: Vector3 = z_axis.cross(x_axis).normalized()
+		var basis := Basis(x_axis, y_axis, z_axis)
 		global_transform = Transform3D(basis, pos)
 	else:
 		global_position.y = 2.0

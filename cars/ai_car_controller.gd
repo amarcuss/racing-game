@@ -174,8 +174,9 @@ func _compute_target_speed(offset: float, look_ahead: float, max_speed: float) -
 	var p1: Vector3 = curve.sample_baked(ahead1_offset)
 	var p2: Vector3 = curve.sample_baked(ahead2_offset)
 
-	var dir1: Vector3 = (p1 - p0).normalized()
-	var dir2: Vector3 = (p2 - p1).normalized()
+	# Flatten to XZ plane so elevation changes don't register as curvature
+	var dir1 := Vector3(p1.x - p0.x, 0.0, p1.z - p0.z).normalized()
+	var dir2 := Vector3(p2.x - p1.x, 0.0, p2.z - p1.z).normalized()
 
 	# Curvature = angle change between direction vectors
 	var dot: float = clampf(dir1.dot(dir2), -1.0, 1.0)
@@ -233,9 +234,10 @@ func _unstick() -> void:
 	car.linear_velocity = Vector3.ZERO
 	car.angular_velocity = Vector3.ZERO
 
-	# Build basis facing forward (car faces -Z)
-	var right: Vector3 = Vector3.UP.cross(forward).normalized()
-	var up: Vector3 = forward.cross(right).normalized()
-	var basis := Basis(right, up, -forward)
+	# Build right-handed basis facing forward (car's -Z = forward)
+	var z_axis: Vector3 = -forward
+	var x_axis: Vector3 = Vector3.UP.cross(z_axis).normalized()
+	var y_axis: Vector3 = z_axis.cross(x_axis).normalized()
+	var basis := Basis(x_axis, y_axis, z_axis)
 
 	car.global_transform = Transform3D(basis, pos)
