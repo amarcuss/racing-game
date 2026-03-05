@@ -13,6 +13,7 @@ const GOLD := Color("FFD700")
 var credits_label: Label
 var car_pivot: Node3D
 var sub_viewport: SubViewport
+var btn_box: VBoxContainer
 
 func _ready() -> void:
 	layer = 10
@@ -59,7 +60,7 @@ func _build_ui() -> void:
 	preview_container.add_child(sub_viewport)
 
 	# Menu buttons (left side)
-	var btn_box := VBoxContainer.new()
+	btn_box = VBoxContainer.new()
 	btn_box.position = Vector2(160, 320)
 	btn_box.size = Vector2(400, 400)
 	btn_box.add_theme_constant_override("separation", 20)
@@ -195,7 +196,7 @@ func _update_credits_display() -> void:
 		credits_label.text = "$%d" % SaveManager.profile.credits
 
 func _on_quick_race() -> void:
-	GameManager.transition_to_scene("res://ui/track_select/track_select.tscn")
+	GameManager.transition_to_scene("res://ui/player_select/player_select.tscn")
 
 func _on_garage() -> void:
 	GameManager.transition_to_scene("res://ui/garage/garage.tscn")

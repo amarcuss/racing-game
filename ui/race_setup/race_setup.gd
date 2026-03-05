@@ -156,9 +156,10 @@ func _update_display() -> void:
 	var track_data: Resource = GameManager.get_selected_track_data()
 	var car_name: String = car_data.car_name if car_data else "Unknown"
 	var track_name: String = track_data.track_name if track_data else "Unknown"
+	var mode_str: String = "2P SPLIT" if GameManager.split_screen else "1P"
 	if summary_label:
-		summary_label.text = "%s  |  %s  |  %d laps  |  %d AI  |  %s" % [
-			car_name, track_name, laps_value, ai_count_value, DIFFICULTY_NAMES[difficulty_value]]
+		summary_label.text = "%s  |  %s  |  %d laps  |  %d AI  |  %s  |  %s" % [
+			car_name, track_name, laps_value, ai_count_value, DIFFICULTY_NAMES[difficulty_value], mode_str]
 
 func _on_back() -> void:
 	GameManager.transition_to_scene("res://ui/track_select/track_select.tscn")

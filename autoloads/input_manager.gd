@@ -35,6 +35,7 @@ func _register_p2_actions() -> void:
 	_add_key_action("p2_handbrake", KEY_KP_0)
 	_add_key_action("p2_look_back", KEY_KP_1)
 	_add_key_action("p2_reset", KEY_KP_2)
+	_add_key_action("p2_pause", KEY_ESCAPE)
 
 	# Gamepad for player 2 (device 1)
 	_add_joy_axis_action("p2_accelerate", JOY_AXIS_TRIGGER_RIGHT, 0.1, 1)
@@ -44,6 +45,7 @@ func _register_p2_actions() -> void:
 	_add_joy_button_action("p2_handbrake", JOY_BUTTON_A, 1)
 	_add_joy_button_action("p2_look_back", JOY_BUTTON_LEFT_SHOULDER, 1)
 	_add_joy_button_action("p2_reset", JOY_BUTTON_Y, 1)
+	_add_joy_button_action("p2_pause", JOY_BUTTON_START, 1)
 
 # --- Input accessors ---
 
@@ -71,7 +73,7 @@ func is_reset_pressed(player: int) -> bool:
 	return Input.is_action_just_pressed(_prefix(player) + "reset")
 
 func is_pause_pressed() -> bool:
-	return Input.is_action_just_pressed("p1_pause")
+	return Input.is_action_just_pressed("p1_pause") or Input.is_action_just_pressed("p2_pause")
 
 # --- Helpers ---
 

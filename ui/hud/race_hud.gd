@@ -5,6 +5,10 @@ extends CanvasLayer
 
 var player_car: VehicleBody3D
 
+# Layout (configurable for split-screen)
+var screen_offset_x: float = 0.0
+var screen_width: float = 1920.0
+
 # Colors
 const BG_DARK := Color("0A0E1A")
 const PRIMARY_ACCENT := Color("FF6B1A")
@@ -46,6 +50,10 @@ func _ready() -> void:
 func set_player_car(car: VehicleBody3D) -> void:
 	player_car = car
 
+func configure_layout(offset_x: float, width: float) -> void:
+	screen_offset_x = offset_x
+	screen_width = width
+
 # --- Build UI ---
 
 func _build_top_bar() -> void:
@@ -53,12 +61,12 @@ func _build_top_bar() -> void:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(BG_DARK, 0.7)
 	bar.add_theme_stylebox_override("panel", sb)
-	bar.position = Vector2(0, 0)
-	bar.size = Vector2(1920, TOP_BAR_HEIGHT)
+	bar.position = Vector2(screen_offset_x, 0)
+	bar.size = Vector2(screen_width, TOP_BAR_HEIGHT)
 	add_child(bar)
 
 	var hbox := HBoxContainer.new()
-	hbox.position = Vector2(40, 12)
+	hbox.position = Vector2(20, 12)
 	hbox.add_theme_constant_override("separation", 20)
 	bar.add_child(hbox)
 
@@ -102,14 +110,14 @@ func _build_info_labels() -> void:
 	best_lap_label.text = ""
 	best_lap_label.add_theme_font_size_override("font_size", 20)
 	best_lap_label.add_theme_color_override("font_color", SUCCESS)
-	best_lap_label.position = Vector2(40, TOP_BAR_HEIGHT + 10)
+	best_lap_label.position = Vector2(screen_offset_x + 20, TOP_BAR_HEIGHT + 10)
 	add_child(best_lap_label)
 
 	last_lap_label = Label.new()
 	last_lap_label.text = ""
 	last_lap_label.add_theme_font_size_override("font_size", 22)
 	last_lap_label.add_theme_color_override("font_color", PRIMARY_ACCENT)
-	last_lap_label.position = Vector2(40, TOP_BAR_HEIGHT + 36)
+	last_lap_label.position = Vector2(screen_offset_x + 20, TOP_BAR_HEIGHT + 36)
 	last_lap_label.modulate.a = 0.0
 	add_child(last_lap_label)
 
@@ -120,7 +128,7 @@ func _build_speed_display() -> void:
 	sb.bg_color = Color(BG_DARK, 0.5)
 	sb.set_corner_radius_all(8)
 	panel.add_theme_stylebox_override("panel", sb)
-	panel.position = Vector2(1660, 860)
+	panel.position = Vector2(screen_offset_x + screen_width - 260, 860)
 	panel.size = Vector2(220, 180)
 	add_child(panel)
 

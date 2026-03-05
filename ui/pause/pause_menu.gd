@@ -65,7 +65,7 @@ func _build_ui() -> void:
 	menu_btn.pressed.connect(_on_main_menu)
 
 func _input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("p1_pause"):
+	if visible and (event.is_action_pressed("p1_pause") or event.is_action_pressed("p2_pause")):
 		hide_pause()
 		get_viewport().set_input_as_handled()
 

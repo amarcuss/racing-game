@@ -12,6 +12,8 @@ var selected_track_index: int = 0
 var race_laps: int = 3
 var ai_count: int = 5
 var ai_difficulty: int = 1  # 0=EASY, 1=MEDIUM, 2=HARD
+var split_screen: bool = false
+var p2_car_index: int = 0
 
 const CAR_PATHS: Array[String] = [
 	"res://cars/car_definitions/starter_sedan.tres",
@@ -81,11 +83,19 @@ func go_to_main_menu() -> void:
 
 func go_to_race() -> void:
 	state = GameState.RACING
-	transition_to_scene("res://scenes/race/race_scene.tscn")
+	if split_screen:
+		transition_to_scene("res://scenes/race/split_screen_race.tscn")
+	else:
+		transition_to_scene("res://scenes/race/race_scene.tscn")
 
 func get_selected_car_data() -> Resource:
 	if selected_car_index < CAR_PATHS.size():
 		return load(CAR_PATHS[selected_car_index])
+	return load(CAR_PATHS[0])
+
+func get_p2_car_data() -> Resource:
+	if p2_car_index < CAR_PATHS.size():
+		return load(CAR_PATHS[p2_car_index])
 	return load(CAR_PATHS[0])
 
 func get_car_data(index: int) -> Resource:
