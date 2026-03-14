@@ -2,10 +2,10 @@ extends RefCounted
 
 ## Coupe mesh builder — sleeker shape with sloped rear cabin and fender flares.
 
-static func build(body_mesh: Node3D, car_data: Resource, wheels: Array) -> void:
+static func build(body_mesh: Node3D, car_data: Resource, wheels: Array) -> StandardMaterial3D:
 	# Build base sedan shape first
 	var SedanMesh: GDScript = load("res://cars/car_meshes/sedan_mesh.gd")
-	SedanMesh.build(body_mesh, car_data, wheels)
+	var taillight_mat: StandardMaterial3D = SedanMesh.build(body_mesh, car_data, wheels)
 
 	var mat_secondary := StandardMaterial3D.new()
 	mat_secondary.albedo_color = car_data.secondary_color
@@ -30,6 +30,9 @@ static func build(body_mesh: Node3D, car_data: Resource, wheels: Array) -> void:
 	mat_body.albedo_color = car_data.body_color
 	mat_body.metallic = 0.6
 	mat_body.roughness = 0.25
+	mat_body.clearcoat_enabled = true
+	mat_body.clearcoat = 0.8
+	mat_body.clearcoat_roughness = 0.1
 
 	for side in [-1.0, 1.0]:
 		# Front fender flare
@@ -47,3 +50,5 @@ static func build(body_mesh: Node3D, car_data: Resource, wheels: Array) -> void:
 		rear_flare.material = mat_body
 		rear_flare.use_collision = false
 		body_mesh.add_child(rear_flare)
+
+	return taillight_mat

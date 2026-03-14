@@ -12,6 +12,7 @@ var time_label: Label
 var best_lap_label: Label
 var credits_label: Label
 var credits_target: int = 0
+var confetti: GPUParticles2D
 
 const BG_DARK := Color("0A0E1A")
 const PRIMARY_ACCENT := Color("FF6B1A")
@@ -116,6 +117,42 @@ func _build_ui() -> void:
 	btn_box.add_child(menu_btn)
 	menu_btn.pressed.connect(_on_main_menu)
 
+	# Confetti particles (hidden until 1st place)
+	confetti = GPUParticles2D.new()
+	confetti.amount = 100
+	confetti.lifetime = 3.0
+	confetti.emitting = false
+	confetti.position = Vector2(960, -20)
+	var conf_mat := ParticleProcessMaterial.new()
+	conf_mat.direction = Vector3(0, 1, 0)
+	conf_mat.spread = 45.0
+	conf_mat.initial_velocity_min = 100.0
+	conf_mat.initial_velocity_max = 250.0
+	conf_mat.gravity = Vector3(0, 200, 0)
+	conf_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	conf_mat.emission_box_extents = Vector3(450, 0, 0)
+	conf_mat.scale_min = 3.0
+	conf_mat.scale_max = 6.0
+	conf_mat.angular_velocity_min = -180.0
+	conf_mat.angular_velocity_max = 180.0
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color.RED)
+	gradient.add_point(0.2, Color.YELLOW)
+	gradient.add_point(0.4, Color.GREEN)
+	gradient.add_point(0.6, Color.CYAN)
+	gradient.add_point(0.8, Color.BLUE)
+	gradient.set_color(1, Color.MAGENTA)
+	var grad_tex := GradientTexture1D.new()
+	grad_tex.gradient = gradient
+	conf_mat.color_initial_ramp = grad_tex
+	confetti.process_material = conf_mat
+	# Small white rectangle texture
+	var img := Image.create(4, 3, false, Image.FORMAT_RGBA8)
+	img.fill(Color.WHITE)
+	var tex := ImageTexture.create_from_image(img)
+	confetti.texture = tex
+	overlay.add_child(confetti)
+
 func show_results(car: Node, finish_position: int = 1) -> void:
 	visible = true
 
@@ -148,6 +185,10 @@ func show_results(car: Node, finish_position: int = 1) -> void:
 	}
 	SaveManager.record_race_result(result_dict)
 
+	# Confetti for 1st place
+	if finish_position == 1 and confetti:
+		confetti.emitting = true
+
 	# Slide up animation
 	container.position.y = 1080
 	var tween := create_tween()
@@ -166,11 +207,13 @@ func _update_credits_display(progress: float) -> void:
 # --- Button actions ---
 
 func _on_next_race() -> void:
+	Engine.time_scale = 1.0
 	RaceManager.reset()
 	restart_pressed.emit()
 	get_tree().reload_current_scene()
 
 func _on_main_menu() -> void:
+	Engine.time_scale = 1.0
 	menu_pressed.emit()
 	GameManager.go_to_main_menu()
 

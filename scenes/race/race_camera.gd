@@ -20,6 +20,10 @@ var look_back_distance: float = 5.0
 var look_back_height: float = 2.5
 var is_looking_back: bool = false
 
+# Screen shake
+var shake_intensity: float = 0.0
+var shake_decay: float = 5.0
+
 func _ready() -> void:
 	if target_path:
 		target = get_node(target_path)
@@ -55,5 +59,18 @@ func _physics_process(delta: float) -> void:
 	var desired_forward := (look_target - global_position).normalized()
 	var smoothed_forward := current_forward.lerp(desired_forward, rotation_smoothing * delta).normalized()
 
+	# Screen shake offset
+	if shake_intensity > 0.01:
+		var shake_offset := Vector3(
+			randf_range(-1.0, 1.0) * shake_intensity,
+			randf_range(-1.0, 1.0) * shake_intensity * 0.5,
+			randf_range(-1.0, 1.0) * shake_intensity * 0.3
+		)
+		global_position += shake_offset
+		shake_intensity = lerpf(shake_intensity, 0.0, shake_decay * delta)
+
 	if smoothed_forward.length() > 0.001:
 		look_at(global_position + smoothed_forward, Vector3.UP)
+
+func apply_shake(intensity: float) -> void:
+	shake_intensity = maxf(shake_intensity, intensity)

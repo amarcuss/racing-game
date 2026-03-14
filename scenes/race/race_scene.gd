@@ -15,10 +15,12 @@ var pause_menu: CanvasLayer
 var is_paused: bool = false
 
 func _ready() -> void:
+	Engine.time_scale = 1.0
 	_load_track()
 	_spawn_player()
 	_spawn_ai_cars()
 	_setup_camera()
+	_wire_collision_shake()
 	_setup_ui()
 
 	var track_checkpoints: int = track_node.get_num_checkpoints()
@@ -179,10 +181,30 @@ func _on_race_state_changed(new_state: int) -> void:
 	if new_state == RaceManager.RaceState.FINISHED and not player_results_shown:
 		_show_player_results()
 
+func _wire_collision_shake() -> void:
+	player_car.collision_occurred.connect(func(speed: float):
+		var intensity: float = clampf(speed / 200.0, 0.05, 0.5)
+		race_camera.apply_shake(intensity)
+	)
+
+func _start_slow_motion() -> void:
+	Engine.time_scale = 0.3
+	var timer := Timer.new()
+	timer.wait_time = 2.0
+	timer.one_shot = true
+	timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(timer)
+	timer.timeout.connect(func():
+		Engine.time_scale = 1.0
+		timer.queue_free()
+	)
+	timer.start()
+
 func _show_player_results() -> void:
 	if player_results_shown:
 		return
 	player_results_shown = true
+	_start_slow_motion()
 	var finish_pos: int = RaceManager.get_finish_position(player_car)
 	results_screen.show_results(player_car, finish_pos)
 	# Disable player controller so car coasts to stop

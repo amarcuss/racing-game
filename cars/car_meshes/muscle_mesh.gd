@@ -2,10 +2,10 @@ extends RefCounted
 
 ## Muscle car mesh builder — aggressive stance with hood scoop, exhaust pipes, wider panels.
 
-static func build(body_mesh: Node3D, car_data: Resource, wheels: Array) -> void:
+static func build(body_mesh: Node3D, car_data: Resource, wheels: Array) -> StandardMaterial3D:
 	# Build base sedan shape first
 	var SedanMesh: GDScript = load("res://cars/car_meshes/sedan_mesh.gd")
-	SedanMesh.build(body_mesh, car_data, wheels)
+	var taillight_mat: StandardMaterial3D = SedanMesh.build(body_mesh, car_data, wheels)
 
 	var w: float = car_data.body_width
 	var l: float = car_data.body_length
@@ -46,6 +46,9 @@ static func build(body_mesh: Node3D, car_data: Resource, wheels: Array) -> void:
 	mat_body.albedo_color = car_data.body_color
 	mat_body.metallic = 0.6
 	mat_body.roughness = 0.25
+	mat_body.clearcoat_enabled = true
+	mat_body.clearcoat = 0.8
+	mat_body.clearcoat_roughness = 0.1
 
 	for side in [-1.0, 1.0]:
 		var panel := CSGBox3D.new()
@@ -54,3 +57,5 @@ static func build(body_mesh: Node3D, car_data: Resource, wheels: Array) -> void:
 		panel.material = mat_body
 		panel.use_collision = false
 		body_mesh.add_child(panel)
+
+	return taillight_mat

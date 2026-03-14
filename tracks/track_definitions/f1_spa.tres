@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tracks/track_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+track_name = "F1 Spa"
+description = "Spa-Francorchamps through the Belgian Ardennes — home of the legendary Eau Rouge, the Kemmel Straight, and Pouhon. Dramatic elevation changes in moody fog."
+length_km = 7.0
+road_width = 12.0
+num_checkpoints = 14
+default_laps = 2
+difficulty = 3
+scene_path = "res://tracks/track_scenes/f1_spa.tscn"

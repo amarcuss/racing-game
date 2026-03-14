@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tracks/track_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+track_name = "F1 Monaco"
+description = "The jewel of Formula 1 — a tight street circuit winding through the principality with hairpins, elevation changes, and a legendary tunnel section. No margin for error."
+length_km = 3.3
+road_width = 10.0
+num_checkpoints = 10
+default_laps = 5
+difficulty = 3
+scene_path = "res://tracks/track_scenes/f1_monaco.tscn"

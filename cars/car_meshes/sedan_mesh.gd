@@ -2,7 +2,7 @@ extends RefCounted
 
 ## Sedan mesh builder — standard car shape extracted from car_base.gd.
 
-static func build(body_mesh: Node3D, car_data: Resource, wheels: Array) -> void:
+static func build(body_mesh: Node3D, car_data: Resource, wheels: Array) -> StandardMaterial3D:
 	for child in body_mesh.get_children():
 		child.queue_free()
 
@@ -10,11 +10,16 @@ static func build(body_mesh: Node3D, car_data: Resource, wheels: Array) -> void:
 	mat.albedo_color = car_data.body_color
 	mat.metallic = 0.6
 	mat.roughness = 0.25
+	mat.clearcoat_enabled = true
+	mat.clearcoat = 0.8
+	mat.clearcoat_roughness = 0.1
 
 	var mat_secondary := StandardMaterial3D.new()
 	mat_secondary.albedo_color = car_data.secondary_color
 	mat_secondary.metallic = 0.5
 	mat_secondary.roughness = 0.3
+	mat_secondary.clearcoat_enabled = true
+	mat_secondary.clearcoat = 0.5
 
 	var mat_chrome := StandardMaterial3D.new()
 	mat_chrome.albedo_color = Color(0.85, 0.85, 0.85)
@@ -136,6 +141,8 @@ static func build(body_mesh: Node3D, car_data: Resource, wheels: Array) -> void:
 
 	# Wheel visuals
 	_build_wheels(wheels, car_data)
+
+	return mat_taillight
 
 static func _build_wheels(wheels: Array, car_data: Resource) -> void:
 	var mat_wheel := StandardMaterial3D.new()

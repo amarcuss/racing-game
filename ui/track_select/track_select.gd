@@ -9,8 +9,8 @@ const SURFACE := Color("1E2740")
 const TEXT_PRIMARY := Color("F0F0F0")
 const TEXT_SECONDARY := Color("8899AA")
 
-const TRACK_COLORS := [Color("2ECC71"), Color("3498DB"), Color("9B59B6")]
-const TRACK_COUNT := 3
+const TRACK_COLORS := [Color("2ECC71"), Color("3498DB"), Color("9B59B6"), Color("E74C3C"), Color("F39C12"), Color("1ABC9C")]
+const TRACK_COUNT := 6
 
 var ui_layer: CanvasLayer
 var selected_index: int = 0
@@ -51,12 +51,16 @@ func _build_ui() -> void:
 	accent.size = Vector2(250, 3)
 	bg.add_child(accent)
 
-	# Track cards in HBox
+	# Track cards in scroll container with grid
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(60, 160)
+	scroll.size = Vector2(1800, 420)
+	bg.add_child(scroll)
+
 	var card_box := HBoxContainer.new()
-	card_box.position = Vector2(210, 160)
-	card_box.size = Vector2(1500, 400)
-	card_box.add_theme_constant_override("separation", 30)
-	bg.add_child(card_box)
+	card_box.add_theme_constant_override("separation", 20)
+	card_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(card_box)
 
 	for i in range(TRACK_COUNT):
 		var card := _create_track_card(i)
@@ -114,7 +118,7 @@ func _build_ui() -> void:
 
 func _create_track_card(index: int) -> Button:
 	var card := Button.new()
-	card.custom_minimum_size = Vector2(460, 380)
+	card.custom_minimum_size = Vector2(280, 380)
 
 	var track_data: Resource = GameManager.get_track_data(index)
 	var is_available: bool = track_data != null

@@ -19,11 +19,13 @@ var is_paused: bool = false
 var players_results_shown: Array[bool] = [false, false]
 
 func _ready() -> void:
+	Engine.time_scale = 1.0
 	_load_track()
 	_setup_viewports()
 	_spawn_players()
 	_spawn_ai_cars()
 	_setup_cameras()
+	_wire_collision_shake()
 	_setup_ui()
 
 	var track_checkpoints: int = track_node.get_num_checkpoints()
@@ -232,6 +234,28 @@ func _on_race_state_changed(new_state: int) -> void:
 		if not players_results_shown[0]:
 			_show_results_for_player(0)
 
+func _wire_collision_shake() -> void:
+	for i in range(2):
+		var car: VehicleBody3D = player_cars[i]
+		var cam: Camera3D = cameras[i]
+		car.collision_occurred.connect(func(speed: float):
+			var intensity: float = clampf(speed / 200.0, 0.05, 0.5)
+			cam.apply_shake(intensity)
+		)
+
+func _start_slow_motion() -> void:
+	Engine.time_scale = 0.3
+	var timer := Timer.new()
+	timer.wait_time = 2.0
+	timer.one_shot = true
+	timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(timer)
+	timer.timeout.connect(func():
+		Engine.time_scale = 1.0
+		timer.queue_free()
+	)
+	timer.start()
+
 func _show_results_for_player(player_idx: int) -> void:
 	if players_results_shown[player_idx]:
 		return
@@ -246,5 +270,6 @@ func _show_results_for_player(player_idx: int) -> void:
 
 	# Show shared results when P1 finishes (or on timeout)
 	if player_idx == 0:
+		_start_slow_motion()
 		var finish_pos: int = RaceManager.get_finish_position(car)
 		results_screen.show_results(car, finish_pos)

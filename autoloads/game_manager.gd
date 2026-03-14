@@ -19,6 +19,8 @@ const CAR_PATHS: Array[String] = [
 	"res://cars/car_definitions/starter_sedan.tres",
 	"res://cars/car_definitions/sport_coupe.tres",
 	"res://cars/car_definitions/muscle_car.tres",
+	"res://cars/car_definitions/f1_car.tres",
+	"res://cars/car_definitions/f1_car_blue.tres",
 	"res://cars/car_definitions/super_car.tres",
 	"res://cars/car_definitions/hyper_car.tres",
 ]
@@ -27,6 +29,9 @@ const TRACK_PATHS: Array[String] = [
 	"res://tracks/track_definitions/oval_speedway.tres",
 	"res://tracks/track_definitions/mountain_circuit.tres",
 	"res://tracks/track_definitions/city_streets.tres",
+	"res://tracks/track_definitions/f1_monaco.tres",
+	"res://tracks/track_definitions/f1_monza.tres",
+	"res://tracks/track_definitions/f1_spa.tres",
 ]
 
 # Fade transition
@@ -76,12 +81,14 @@ func transition_to_scene(path: String) -> void:
 	)
 
 func go_to_main_menu() -> void:
+	Engine.time_scale = 1.0
 	RaceManager.reset()
 	get_tree().paused = false
 	state = GameState.MENU
 	transition_to_scene("res://scenes/main.tscn")
 
 func go_to_race() -> void:
+	Engine.time_scale = 1.0
 	state = GameState.RACING
 	if split_screen:
 		transition_to_scene("res://scenes/race/split_screen_race.tscn")

@@ -33,6 +33,16 @@ var last_lap_tween: Tween
 var last_position: int = 1
 var position_flash_tween: Tween
 
+# Minimap
+const MINIMAP_SIZE := 160
+const MINIMAP_MARGIN := 16
+var minimap_panel: Panel
+var minimap_draw: Control
+var minimap_track_points: PackedVector2Array
+var minimap_bounds_min: Vector2
+var minimap_bounds_max: Vector2
+var minimap_initialized: bool = false
+
 # Speed display
 const SPEED_FONT_SIZE := 96
 const BAR_WIDTH := 150
@@ -45,6 +55,7 @@ func _ready() -> void:
 	_build_top_bar()
 	_build_info_labels()
 	_build_speed_display()
+	_build_minimap()
 	RaceManager.lap_completed.connect(_on_lap_completed)
 
 func set_player_car(car: VehicleBody3D) -> void:
@@ -182,6 +193,87 @@ func _build_speed_display() -> void:
 	brake_bar.size = Vector2(0, BAR_HEIGHT)
 	panel.add_child(brake_bar)
 
+func _build_minimap() -> void:
+	minimap_panel = Panel.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(BG_DARK, 0.6)
+	sb.set_corner_radius_all(8)
+	minimap_panel.add_theme_stylebox_override("panel", sb)
+	minimap_panel.position = Vector2(screen_offset_x + screen_width - MINIMAP_SIZE - MINIMAP_MARGIN, TOP_BAR_HEIGHT + MINIMAP_MARGIN)
+	minimap_panel.size = Vector2(MINIMAP_SIZE, MINIMAP_SIZE)
+	add_child(minimap_panel)
+
+	minimap_draw = Control.new()
+	minimap_draw.position = Vector2.ZERO
+	minimap_draw.size = Vector2(MINIMAP_SIZE, MINIMAP_SIZE)
+	minimap_draw.draw.connect(_on_minimap_draw)
+	minimap_panel.add_child(minimap_draw)
+
+func _init_minimap_track() -> void:
+	if not player_car or not player_car.track_path:
+		return
+	var curve: Curve3D = player_car.track_path.curve
+	if not curve or curve.get_baked_length() < 1.0:
+		return
+
+	var total_len: float = curve.get_baked_length()
+	var num_samples: int = 64
+	var points: PackedVector2Array = PackedVector2Array()
+	var min_pt := Vector2(INF, INF)
+	var max_pt := Vector2(-INF, -INF)
+
+	for i in range(num_samples):
+		var offset: float = (float(i) / float(num_samples)) * total_len
+		var pos3d: Vector3 = curve.sample_baked(offset)
+		var pt := Vector2(pos3d.x, pos3d.z)
+		points.append(pt)
+		min_pt.x = minf(min_pt.x, pt.x)
+		min_pt.y = minf(min_pt.y, pt.y)
+		max_pt.x = maxf(max_pt.x, pt.x)
+		max_pt.y = maxf(max_pt.y, pt.y)
+
+	minimap_bounds_min = min_pt
+	minimap_bounds_max = max_pt
+	minimap_track_points = points
+	minimap_initialized = true
+
+func _world_to_minimap(world_pos: Vector3) -> Vector2:
+	var pt := Vector2(world_pos.x, world_pos.z)
+	var range_vec: Vector2 = minimap_bounds_max - minimap_bounds_min
+	var padding: float = 12.0
+	var draw_size: float = MINIMAP_SIZE - padding * 2.0
+	var scale_val: float = draw_size / maxf(range_vec.x, range_vec.y)
+	var centered: Vector2 = pt - minimap_bounds_min - range_vec * 0.5
+	return Vector2(MINIMAP_SIZE * 0.5 + centered.x * scale_val, MINIMAP_SIZE * 0.5 + centered.y * scale_val)
+
+func _on_minimap_draw() -> void:
+	if not minimap_initialized:
+		_init_minimap_track()
+	if not minimap_initialized:
+		return
+
+	# Draw track outline
+	var scaled_points: PackedVector2Array = PackedVector2Array()
+	for pt in minimap_track_points:
+		var range_vec: Vector2 = minimap_bounds_max - minimap_bounds_min
+		var padding: float = 12.0
+		var draw_size: float = MINIMAP_SIZE - padding * 2.0
+		var scale_val: float = draw_size / maxf(range_vec.x, range_vec.y)
+		var centered: Vector2 = pt - minimap_bounds_min - range_vec * 0.5
+		scaled_points.append(Vector2(MINIMAP_SIZE * 0.5 + centered.x * scale_val, MINIMAP_SIZE * 0.5 + centered.y * scale_val))
+	# Close the loop
+	if scaled_points.size() > 1:
+		scaled_points.append(scaled_points[0])
+	minimap_draw.draw_polyline(scaled_points, Color(0.5, 0.5, 0.6, 0.6), 2.0, true)
+
+	# Draw car dots
+	for car in RaceManager.registered_cars:
+		if not is_instance_valid(car):
+			continue
+		var map_pos: Vector2 = _world_to_minimap(car.global_position)
+		var dot_color: Color = SECONDARY_ACCENT if car == player_car else DANGER
+		minimap_draw.draw_circle(map_pos, 4.0, dot_color)
+
 # --- Update loop ---
 
 func _process(_delta: float) -> void:
@@ -193,6 +285,8 @@ func _process(_delta: float) -> void:
 	_update_best_lap()
 	_update_input_bars()
 	_update_position()
+	if minimap_draw:
+		minimap_draw.queue_redraw()
 
 func _update_speed() -> void:
 	speed_label.text = str(int(player_car.current_speed_kph))

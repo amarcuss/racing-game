@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tracks/track_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+track_name = "F1 Monza"
+description = "The Temple of Speed — Italy's legendary high-speed circuit with long straights, tight chicanes, and the sweeping Parabolica. Flat-out glory through a royal park."
+length_km = 5.8
+road_width = 14.0
+num_checkpoints = 12
+default_laps = 3
+difficulty = 2
+scene_path = "res://tracks/track_scenes/f1_monza.tscn"

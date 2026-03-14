@@ -4,6 +4,8 @@ extends VehicleBody3D
 ## VehicleBody3D controller that applies CarData physics: torque curve,
 ## aerodynamic drag/downforce, weight transfer, brake bias, and drift model.
 
+signal collision_occurred(speed: float)
+
 @export var car_data: Resource  # CarData
 
 # --- Node references ---
@@ -28,6 +30,34 @@ var is_reversing: bool = false
 # Track path for reset
 var track_path: Path3D
 
+# Brake lights
+var _taillight_material: StandardMaterial3D
+
+# Particles
+var _tire_smoke_l: GPUParticles3D
+var _tire_smoke_r: GPUParticles3D
+var _exhaust_particles: GPUParticles3D
+var _spark_particles: GPUParticles3D
+
+# Engine audio
+var _audio_player: AudioStreamPlayer3D
+var _audio_playback: AudioStreamGeneratorPlayback
+var _engine_phase: float = 0.0
+var _engine_target_freq: float = 25.0
+var _engine_current_freq: float = 25.0
+var _engine_volume: float = 0.3
+var _engine_rpm_norm: float = 0.0
+var _exhaust_phase: float = 0.0
+var _prev_throttle: float = 0.0
+var _lp_prev: float = 0.0   # 1st low-pass state
+var _lp_prev2: float = 0.0  # 2nd low-pass state (cascaded)
+# Backfire state — discrete gunshot events
+var _backfire_queued: int = 0       # number of bangs left to fire
+var _backfire_cooldown: float = 0.0 # time until next bang allowed
+var _bang_age: int = 0              # samples since current bang started
+var _bang_active: bool = false      # currently playing a bang
+var _bang_sign: float = 1.0         # polarity of current bang
+
 # Slipstream
 var slipstream_active: bool = false
 var slipstream_ray: RayCast3D
@@ -46,6 +76,9 @@ func _ready() -> void:
 	_setup_slipstream_ray()
 	if car_data:
 		_apply_car_data()
+	_setup_particles()
+	_setup_collision_detection()
+	_setup_engine_audio()
 
 func _find_wheels() -> void:
 	wheel_fl = $WheelFL as VehicleWheel3D
@@ -112,6 +145,8 @@ func _physics_process(delta: float) -> void:
 	_check_slipstream()
 	_apply_anti_flip(delta)
 	_check_stuck(delta)
+	_update_brake_lights()
+	_update_particles()
 
 func _update_reverse_state() -> void:
 	var local_vel: Vector3 = global_transform.basis.inverse() * linear_velocity
@@ -301,8 +336,230 @@ func _build_car_mesh() -> void:
 			mesh_script = load("res://cars/car_meshes/coupe_mesh.gd")
 		3:
 			mesh_script = load("res://cars/car_meshes/muscle_mesh.gd")
+		4:
+			mesh_script = load("res://cars/car_meshes/f1_mesh.gd")
 		_:
 			mesh_script = load("res://cars/car_meshes/sedan_mesh.gd")
 
 	var wheels_arr: Array = [wheel_fl, wheel_fr, wheel_rl, wheel_rr]
-	mesh_script.build(body_mesh, car_data, wheels_arr)
+	_taillight_material = mesh_script.build(body_mesh, car_data, wheels_arr)
+
+func _update_brake_lights() -> void:
+	if not _taillight_material:
+		return
+	var target_energy: float = lerpf(1.5, 4.0, brake_input)
+	_taillight_material.emission_energy_multiplier = target_energy
+
+func _setup_particles() -> void:
+	if not car_data:
+		return
+
+	var l: float = car_data.body_length
+	var w: float = car_data.body_width
+
+	# Tire smoke — left rear
+	_tire_smoke_l = _create_tire_smoke()
+	_tire_smoke_l.position = Vector3(-w * 0.4, 0.05, l * 0.3)
+	add_child(_tire_smoke_l)
+
+	# Tire smoke — right rear
+	_tire_smoke_r = _create_tire_smoke()
+	_tire_smoke_r.position = Vector3(w * 0.4, 0.05, l * 0.3)
+	add_child(_tire_smoke_r)
+
+	# Exhaust
+	_exhaust_particles = GPUParticles3D.new()
+	_exhaust_particles.amount = 10
+	_exhaust_particles.lifetime = 0.8
+	_exhaust_particles.emitting = false
+	_exhaust_particles.position = Vector3(0, 0.15, l * 0.5 + 0.1)
+	var exhaust_mat := ParticleProcessMaterial.new()
+	exhaust_mat.direction = Vector3(0, 0.5, 1.0)
+	exhaust_mat.spread = 15.0
+	exhaust_mat.initial_velocity_min = 1.0
+	exhaust_mat.initial_velocity_max = 2.0
+	exhaust_mat.gravity = Vector3(0, 0.5, 0)
+	exhaust_mat.scale_min = 0.1
+	exhaust_mat.scale_max = 0.2
+	exhaust_mat.color = Color(0.3, 0.3, 0.3, 0.4)
+	_exhaust_particles.process_material = exhaust_mat
+	var exhaust_mesh := QuadMesh.new()
+	exhaust_mesh.size = Vector2(0.15, 0.15)
+	_exhaust_particles.draw_pass_1 = exhaust_mesh
+	add_child(_exhaust_particles)
+
+	# Sparks
+	_spark_particles = GPUParticles3D.new()
+	_spark_particles.amount = 20
+	_spark_particles.lifetime = 0.4
+	_spark_particles.one_shot = true
+	_spark_particles.explosiveness = 0.9
+	_spark_particles.emitting = false
+	var spark_mat := ParticleProcessMaterial.new()
+	spark_mat.direction = Vector3(0, 1, 0)
+	spark_mat.spread = 60.0
+	spark_mat.initial_velocity_min = 3.0
+	spark_mat.initial_velocity_max = 8.0
+	spark_mat.gravity = Vector3(0, -9.8, 0)
+	spark_mat.scale_min = 0.02
+	spark_mat.scale_max = 0.05
+	spark_mat.color = Color(1.0, 0.6, 0.1, 1.0)
+	_spark_particles.process_material = spark_mat
+	var spark_mesh := QuadMesh.new()
+	spark_mesh.size = Vector2(0.04, 0.04)
+	_spark_particles.draw_pass_1 = spark_mesh
+	add_child(_spark_particles)
+
+func _create_tire_smoke() -> GPUParticles3D:
+	var p := GPUParticles3D.new()
+	p.amount = 30
+	p.lifetime = 1.5
+	p.emitting = false
+	var mat := ParticleProcessMaterial.new()
+	mat.direction = Vector3(0, 1, 0)
+	mat.spread = 30.0
+	mat.initial_velocity_min = 0.5
+	mat.initial_velocity_max = 1.5
+	mat.gravity = Vector3(0, 0.3, 0)
+	mat.scale_min = 0.3
+	mat.scale_max = 0.6
+	mat.color = Color(0.85, 0.85, 0.85, 0.5)
+	p.process_material = mat
+	var mesh := QuadMesh.new()
+	mesh.size = Vector2(0.5, 0.5)
+	p.draw_pass_1 = mesh
+	return p
+
+func _update_particles() -> void:
+	# Tire smoke when drifting at speed
+	var smoke_active: bool = is_drifting and current_speed_kph > 20.0
+	if _tire_smoke_l:
+		_tire_smoke_l.emitting = smoke_active
+	if _tire_smoke_r:
+		_tire_smoke_r.emitting = smoke_active
+
+	# Exhaust on throttle
+	if _exhaust_particles:
+		_exhaust_particles.emitting = throttle_input > 0.3 and current_speed_kph > 5.0
+
+func _setup_collision_detection() -> void:
+	contact_monitor = true
+	max_contacts_reported = 4
+	body_entered.connect(_on_body_entered)
+
+func _on_body_entered(body: Node) -> void:
+	if body is StaticBody3D:
+		# Trigger sparks at contact point
+		if _spark_particles:
+			_spark_particles.emitting = false
+			_spark_particles.restart()
+			_spark_particles.emitting = true
+		collision_occurred.emit(current_speed_kph)
+
+func _setup_engine_audio() -> void:
+	var stream := AudioStreamGenerator.new()
+	stream.mix_rate = 44100.0
+	stream.buffer_length = 0.05
+	_audio_player = AudioStreamPlayer3D.new()
+	_audio_player.stream = stream
+	_audio_player.unit_size = 15.0
+	_audio_player.max_db = 6.0
+	add_child(_audio_player)
+	_audio_player.play()
+	_audio_playback = _audio_player.get_stream_playback()
+
+func _process(delta: float) -> void:
+	_fill_audio_buffer(delta)
+
+func _fill_audio_buffer(delta: float) -> void:
+	if not _audio_playback or not car_data:
+		return
+
+	var speed_ratio: float = clampf(current_speed_kph / car_data.max_speed_kph, 0.0, 1.0)
+	_engine_rpm_norm = lerpf(_engine_rpm_norm, speed_ratio, 5.0 * delta)
+
+	# Very low fundamental: 25Hz idle → 120Hz redline — deep rumble, not a scream
+	_engine_target_freq = lerpf(25.0, 120.0, _engine_rpm_norm)
+	_engine_current_freq = lerpf(_engine_current_freq, _engine_target_freq, 0.12)
+
+	# Volume: idle quiet, builds with RPM and throttle
+	var rpm_vol: float = lerpf(0.08, 0.3, _engine_rpm_norm)
+	var throttle_vol: float = lerpf(0.5, 1.0, throttle_input)
+	_engine_volume = rpm_vol * throttle_vol
+
+	# Backfire detection: queue 2-4 discrete bangs on throttle lift
+	if _prev_throttle > 0.4 and throttle_input < 0.15 and _engine_rpm_norm > 0.35:
+		if _backfire_queued == 0:
+			_backfire_queued = randi_range(2, 4)
+			_backfire_cooldown = 0.0
+	_prev_throttle = throttle_input
+	_backfire_cooldown = maxf(_backfire_cooldown - delta, 0.0)
+
+	# Trigger next bang if cooldown expired
+	if _backfire_queued > 0 and not _bang_active and _backfire_cooldown <= 0.0:
+		_bang_active = true
+		_bang_age = 0
+		_bang_sign = 1.0 if randf() > 0.5 else -1.0
+		_backfire_queued -= 1
+		_backfire_cooldown = randf_range(0.06, 0.15)  # 60-150ms between shots
+
+	var frames_available: int = _audio_playback.get_frames_available()
+	var sample_rate: float = 44100.0
+	var increment: float = _engine_current_freq / sample_rate
+
+	# Cascaded low-pass: very aggressive to kill buzz. Opens slightly at high RPM
+	var lp_alpha: float = clampf(lerpf(0.06, 0.18, _engine_rpm_norm), 0.04, 0.25)
+
+	# Bang duration in samples (~50ms = gunshot length)
+	var bang_len: int = int(sample_rate * 0.05)
+
+	for i in range(frames_available):
+		var p: float = _engine_phase
+
+		# V8-style firing
+		var pulse: float = 0.0
+		var p1: float = fmod(p, 1.0)
+		var p2: float = fmod(p + 0.45, 1.0)
+		if p1 < 0.2:
+			pulse += sin(p1 / 0.2 * PI) * 0.7
+		if p2 < 0.2:
+			pulse += sin(p2 / 0.2 * PI) * 0.55
+
+		# Sub-bass rumble
+		_exhaust_phase = fmod(_exhaust_phase + increment * 0.5, 1.0)
+		var rumble: float = sin(_exhaust_phase * TAU) * 0.35
+
+		var sample: float = pulse * 0.5 + rumble
+
+		# Two-stage low-pass filter
+		_lp_prev = _lp_prev + lp_alpha * (sample - _lp_prev)
+		_lp_prev2 = _lp_prev2 + lp_alpha * (_lp_prev - _lp_prev2)
+		sample = _lp_prev2
+		sample *= _engine_volume
+
+		# Gunshot backfire — injected raw after filter
+		if _bang_active:
+			var t: float = float(_bang_age) / float(bang_len)
+			if t < 1.0:
+				var bang: float = 0.0
+				if t < 0.02:
+					# Initial transient: max amplitude spike (first ~1ms)
+					bang = _bang_sign * 2.5
+				elif t < 0.08:
+					# Sharp crack: fast decaying noise burst
+					var env: float = (0.08 - t) / 0.06
+					bang = randf_range(-1.0, 1.0) * env * 1.8
+				else:
+					# Low-freq boom tail: damped 60Hz sine
+					var tail_t: float = t - 0.08
+					var env2: float = exp(-tail_t * 30.0)
+					bang = sin(tail_t * TAU * 60.0) * env2 * 1.2 * _bang_sign
+				sample += bang
+				_bang_age += 1
+			else:
+				_bang_active = false
+
+		sample = clampf(sample, -1.0, 1.0)
+
+		_audio_playback.push_frame(Vector2(sample, sample))
+		_engine_phase = fmod(_engine_phase + increment, 1.0)

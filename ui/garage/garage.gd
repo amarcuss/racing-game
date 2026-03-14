@@ -80,8 +80,8 @@ func _build_ui() -> void:
 	card_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(card_list)
 
-	# Build car cards (indices 0-4, but only 0-2 have data)
-	for i in range(5):
+	# Build car cards for all registered cars
+	for i in range(GameManager.CAR_PATHS.size()):
 		var card := _create_car_card(i)
 		card_list.add_child(card)
 		car_cards.append(card)
@@ -340,6 +340,7 @@ func _update_car_preview(car_index: int) -> void:
 	match car_data.tier:
 		2: mesh_script = load("res://cars/car_meshes/coupe_mesh.gd")
 		3: mesh_script = load("res://cars/car_meshes/muscle_mesh.gd")
+		4: mesh_script = load("res://cars/car_meshes/f1_mesh.gd")
 		_: mesh_script = load("res://cars/car_meshes/sedan_mesh.gd")
 
 	mesh_script.build(body_mesh, car_data, wheels)
