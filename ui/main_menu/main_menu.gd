@@ -14,6 +14,9 @@ var credits_label: Label
 var car_pivot: Node3D
 var sub_viewport: SubViewport
 var btn_box: VBoxContainer
+var mode_label: Label
+
+const MODE_NAMES: Array[String] = ["STREET RACING", "F1"]
 
 func _ready() -> void:
 	layer = 10
@@ -28,42 +31,86 @@ func _build_ui() -> void:
 	bg.color = BG_DARK
 	add_child(bg)
 
+	# Mode selector (top bar)
+	var mode_box := HBoxContainer.new()
+	mode_box.position = Vector2(0, 15)
+	mode_box.size = Vector2(1920, 50)
+	mode_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	mode_box.add_theme_constant_override("separation", 20)
+	bg.add_child(mode_box)
+
+	var left_arrow := Button.new()
+	left_arrow.text = "<"
+	left_arrow.custom_minimum_size = Vector2(48, 44)
+	left_arrow.add_theme_font_size_override("font_size", 28)
+	left_arrow.add_theme_color_override("font_color", PRIMARY_ACCENT)
+	var sb_arrow := StyleBoxFlat.new()
+	sb_arrow.bg_color = SURFACE
+	sb_arrow.set_corner_radius_all(6)
+	left_arrow.add_theme_stylebox_override("normal", sb_arrow)
+	var sb_arrow_hover := StyleBoxFlat.new()
+	sb_arrow_hover.bg_color = SURFACE.lightened(0.15)
+	sb_arrow_hover.set_corner_radius_all(6)
+	left_arrow.add_theme_stylebox_override("hover", sb_arrow_hover)
+	left_arrow.add_theme_stylebox_override("pressed", sb_arrow)
+	mode_box.add_child(left_arrow)
+	left_arrow.pressed.connect(_on_mode_prev)
+
+	mode_label = Label.new()
+	mode_label.text = MODE_NAMES[GameManager.racing_mode]
+	mode_label.add_theme_font_size_override("font_size", 32)
+	mode_label.add_theme_color_override("font_color", PRIMARY_ACCENT)
+	mode_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mode_label.custom_minimum_size = Vector2(280, 44)
+	mode_box.add_child(mode_label)
+
+	var right_arrow := Button.new()
+	right_arrow.text = ">"
+	right_arrow.custom_minimum_size = Vector2(48, 44)
+	right_arrow.add_theme_font_size_override("font_size", 28)
+	right_arrow.add_theme_color_override("font_color", PRIMARY_ACCENT)
+	right_arrow.add_theme_stylebox_override("normal", sb_arrow)
+	right_arrow.add_theme_stylebox_override("hover", sb_arrow_hover)
+	right_arrow.add_theme_stylebox_override("pressed", sb_arrow)
+	mode_box.add_child(right_arrow)
+	right_arrow.pressed.connect(_on_mode_next)
+
 	# Title: V E L O C I T Y
 	var title := Label.new()
 	title.text = "V E L O C I T Y"
 	title.add_theme_font_size_override("font_size", 72)
 	title.add_theme_color_override("font_color", TEXT_PRIMARY)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.position = Vector2(0, 60)
+	title.position = Vector2(0, 80)
 	title.size = Vector2(1920, 100)
 	bg.add_child(title)
 
 	# Orange accent line under title
 	var accent := ColorRect.new()
 	accent.color = PRIMARY_ACCENT
-	accent.position = Vector2(810, 170)
+	accent.position = Vector2(810, 190)
 	accent.size = Vector2(300, 3)
 	bg.add_child(accent)
 
-	# Car preview container (right side)
+	# Car preview container (centered)
 	var preview_container := SubViewportContainer.new()
-	preview_container.position = Vector2(960, 200)
-	preview_container.size = Vector2(800, 600)
+	preview_container.position = Vector2(560, 210)
+	preview_container.size = Vector2(800, 480)
 	preview_container.stretch = true
 	bg.add_child(preview_container)
 
 	sub_viewport = SubViewport.new()
-	sub_viewport.size = Vector2i(800, 600)
+	sub_viewport.size = Vector2i(800, 480)
 	sub_viewport.own_world_3d = true
 	sub_viewport.transparent_bg = true
 	sub_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	preview_container.add_child(sub_viewport)
 
-	# Menu buttons (left side)
+	# Menu buttons (centered below car preview)
 	btn_box = VBoxContainer.new()
-	btn_box.position = Vector2(160, 320)
-	btn_box.size = Vector2(400, 400)
-	btn_box.add_theme_constant_override("separation", 20)
+	btn_box.position = Vector2(760, 700)
+	btn_box.size = Vector2(400, 320)
+	btn_box.add_theme_constant_override("separation", 16)
 	bg.add_child(btn_box)
 
 	var quick_race_btn := _create_button("QUICK RACE", PRIMARY_ACCENT)
@@ -82,13 +129,13 @@ func _build_ui() -> void:
 	btn_box.add_child(quit_btn)
 	quit_btn.pressed.connect(_on_quit)
 
-	# Credits display (bottom-right)
+	# Credits display (bottom-center)
 	credits_label = Label.new()
 	credits_label.add_theme_font_size_override("font_size", 28)
 	credits_label.add_theme_color_override("font_color", GOLD)
-	credits_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	credits_label.position = Vector2(1500, 1030)
-	credits_label.size = Vector2(380, 40)
+	credits_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	credits_label.position = Vector2(0, 1030)
+	credits_label.size = Vector2(1920, 40)
 	bg.add_child(credits_label)
 	_update_credits_display()
 
@@ -181,6 +228,8 @@ func _create_car_visual(parent: Node3D, car_index: int) -> void:
 			mesh_script = load("res://cars/car_meshes/coupe_mesh.gd")
 		3:
 			mesh_script = load("res://cars/car_meshes/muscle_mesh.gd")
+		4:
+			mesh_script = load("res://cars/car_meshes/f1_mesh.gd")
 		_:
 			mesh_script = load("res://cars/car_meshes/sedan_mesh.gd")
 
@@ -194,6 +243,22 @@ func _process(delta: float) -> void:
 func _update_credits_display() -> void:
 	if credits_label and SaveManager and SaveManager.profile:
 		credits_label.text = "$%d" % SaveManager.profile.credits
+
+func _switch_mode(direction: int) -> void:
+	var new_mode: int = (GameManager.racing_mode + direction) % 2
+	if new_mode < 0:
+		new_mode = 1
+	GameManager.set_racing_mode(new_mode as GameManager.RacingMode)
+	mode_label.text = MODE_NAMES[GameManager.racing_mode]
+	# Update car preview
+	if car_pivot:
+		_create_car_visual(car_pivot, GameManager.selected_car_index)
+
+func _on_mode_prev() -> void:
+	_switch_mode(-1)
+
+func _on_mode_next() -> void:
+	_switch_mode(1)
 
 func _on_quick_race() -> void:
 	GameManager.transition_to_scene("res://ui/player_select/player_select.tscn")

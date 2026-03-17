@@ -89,8 +89,9 @@ func _build_ui() -> void:
 
 	# Buttons
 	var btn_box := HBoxContainer.new()
-	btn_box.position = Vector2(610, 750)
-	btn_box.size = Vector2(700, 60)
+	btn_box.position = Vector2(0, 750)
+	btn_box.size = Vector2(1920, 60)
+	btn_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_box.add_theme_constant_override("separation", 30)
 	bg.add_child(btn_box)
 
@@ -104,8 +105,9 @@ func _build_ui() -> void:
 
 func _create_spinner(parent: Control, label_text: String, y_pos: float, initial: int, min_val: int, max_val: int, on_change: Callable, is_difficulty: bool = false) -> void:
 	var row := HBoxContainer.new()
-	row.position = Vector2(50, y_pos)
-	row.size = Vector2(700, 60)
+	row.position = Vector2(100, y_pos)
+	row.size = Vector2(600, 60)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 20)
 	parent.add_child(row)
 

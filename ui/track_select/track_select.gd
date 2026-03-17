@@ -10,11 +10,11 @@ const TEXT_PRIMARY := Color("F0F0F0")
 const TEXT_SECONDARY := Color("8899AA")
 
 const TRACK_COLORS := [Color("2ECC71"), Color("3498DB"), Color("9B59B6"), Color("E74C3C"), Color("F39C12"), Color("1ABC9C")]
-const TRACK_COUNT := 6
 
 var ui_layer: CanvasLayer
 var selected_index: int = 0
 var track_cards: Array = []
+var mode_track_indices: Array[int] = []
 var track_name_label: Label
 var track_desc_label: Label
 var difficulty_label: Label
@@ -22,11 +22,12 @@ var length_label: Label
 var continue_btn: Button
 
 func _ready() -> void:
+	mode_track_indices = GameManager.get_track_indices_for_mode()
 	ui_layer = CanvasLayer.new()
 	ui_layer.layer = 10
 	add_child(ui_layer)
 	_build_ui()
-	_select_track(0)
+	_select_track(mode_track_indices[0])
 
 func _build_ui() -> void:
 	var bg := ColorRect.new()
@@ -51,19 +52,17 @@ func _build_ui() -> void:
 	accent.size = Vector2(250, 3)
 	bg.add_child(accent)
 
-	# Track cards in scroll container with grid
-	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(60, 160)
-	scroll.size = Vector2(1800, 420)
-	bg.add_child(scroll)
-
+	# Track cards centered
 	var card_box := HBoxContainer.new()
 	card_box.add_theme_constant_override("separation", 20)
-	card_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(card_box)
+	card_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	card_box.position = Vector2(0, 160)
+	card_box.size = Vector2(1920, 420)
+	bg.add_child(card_box)
 
-	for i in range(TRACK_COUNT):
-		var card := _create_track_card(i)
+	for ci in range(mode_track_indices.size()):
+		var track_idx: int = mode_track_indices[ci]
+		var card := _create_track_card(track_idx, ci)
 		card_box.add_child(card)
 		track_cards.append(card)
 
@@ -103,8 +102,9 @@ func _build_ui() -> void:
 
 	# Buttons
 	var btn_box := HBoxContainer.new()
-	btn_box.position = Vector2(610, 880)
-	btn_box.size = Vector2(700, 60)
+	btn_box.position = Vector2(0, 880)
+	btn_box.size = Vector2(1920, 60)
+	btn_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_box.add_theme_constant_override("separation", 30)
 	bg.add_child(btn_box)
 
@@ -116,14 +116,14 @@ func _build_ui() -> void:
 	btn_box.add_child(continue_btn)
 	continue_btn.pressed.connect(_on_continue)
 
-func _create_track_card(index: int) -> Button:
+func _create_track_card(index: int, color_index: int = 0) -> Button:
 	var card := Button.new()
 	card.custom_minimum_size = Vector2(280, 380)
 
 	var track_data: Resource = GameManager.get_track_data(index)
 	var is_available: bool = track_data != null
 
-	var color: Color = TRACK_COLORS[index] if index < TRACK_COLORS.size() else TRACK_COLORS[0]
+	var color: Color = TRACK_COLORS[color_index] if color_index < TRACK_COLORS.size() else TRACK_COLORS[0]
 
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = BG_MID

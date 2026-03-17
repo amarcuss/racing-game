@@ -9,31 +9,31 @@ tier = 4
 price = 12000
 description = "A rival Formula 1 machine optimised for downforce and cornering. Trades a touch of top speed for devastating mid-corner grip and traction out of slow turns."
 
-max_speed_kph = 325.0
+max_speed_kph = 335.0
 drive_type = 1
-mass_kg = 798.0
+mass_kg = 780.0
 
-torque_low_rpm = 6500.0
-torque_peak_rpm = 7500.0
-torque_high_rpm = 5800.0
+torque_low_rpm = 6800.0
+torque_peak_rpm = 8000.0
+torque_high_rpm = 6200.0
 
-drag_coefficient = 0.50
-downforce_coefficient = 1.0
+drag_coefficient = 0.48
+downforce_coefficient = 1.3
 
-brake_force = 65.0
+brake_force = 70.0
 brake_bias = 0.56
 
-weight_transfer_factor = 0.07
+weight_transfer_factor = 0.05
 
-drift_friction_slip = 2.2
+drift_friction_slip = 2.5
 drift_steer_multiplier = 1.3
-normal_friction_slip = 4.5
+normal_friction_slip = 5.2
 
 suspension_rest_length = 0.08
-suspension_stiffness = 130.0
+suspension_stiffness = 140.0
 suspension_travel = 0.06
-damping_compression = 2.8
-damping_relaxation = 3.2
+damping_compression = 3.0
+damping_relaxation = 3.5
 
 wheel_radius = 0.33
 max_steering_angle = 0.34

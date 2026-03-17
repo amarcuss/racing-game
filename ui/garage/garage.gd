@@ -34,7 +34,11 @@ func _ready() -> void:
 	ui_layer.layer = 10
 	add_child(ui_layer)
 	_build_ui()
-	_select_car(GameManager.selected_car_index)
+	var mode_indices: Array[int] = GameManager.get_car_indices_for_mode()
+	var initial_index: int = GameManager.selected_car_index
+	if initial_index not in mode_indices:
+		initial_index = mode_indices[0]
+	_select_car(initial_index)
 
 func _build_ui() -> void:
 	# Background
@@ -80,8 +84,9 @@ func _build_ui() -> void:
 	card_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(card_list)
 
-	# Build car cards for all registered cars
-	for i in range(GameManager.CAR_PATHS.size()):
+	# Build car cards only for current racing mode
+	var mode_indices: Array[int] = GameManager.get_car_indices_for_mode()
+	for i in mode_indices:
 		var card := _create_car_card(i)
 		card_list.add_child(card)
 		car_cards.append(card)
@@ -366,13 +371,15 @@ func _on_action() -> void:
 
 func _refresh_cards() -> void:
 	# Rebuild card text to reflect ownership changes
-	for i in range(car_cards.size()):
-		var card: Button = car_cards[i]
-		var car_data: Resource = GameManager.get_car_data(i)
+	var mode_indices: Array[int] = GameManager.get_car_indices_for_mode()
+	for ci in range(car_cards.size()):
+		var card: Button = car_cards[ci]
+		var car_index: int = mode_indices[ci]
+		var car_data: Resource = GameManager.get_car_data(car_index)
 		if not car_data:
 			continue
-		var owned: bool = SaveManager.is_car_owned(i)
-		var selected: bool = (i == GameManager.selected_car_index)
+		var owned: bool = SaveManager.is_car_owned(car_index)
+		var selected: bool = (car_index == GameManager.selected_car_index)
 		var status_text: String = ""
 		if selected:
 			status_text = "  [SELECTED]"

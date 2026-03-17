@@ -3,8 +3,10 @@ extends Node
 ## Game manager — state holder, car/track registry, scene transitions.
 
 enum GameState { MENU, RACING, PAUSED }
+enum RacingMode { STREET, F1 }
 
 var state: GameState = GameState.MENU
+var racing_mode: RacingMode = RacingMode.STREET
 var selected_car_index: int = 0
 var selected_track_index: int = 0
 
@@ -121,3 +123,26 @@ func get_selected_track_data() -> Resource:
 	if selected_track_index < TRACK_PATHS.size():
 		return load(TRACK_PATHS[selected_track_index])
 	return load(TRACK_PATHS[0])
+
+# Mode-filtered indices
+const STREET_CAR_INDICES: Array[int] = [0, 1, 2]  # sedan, coupe, muscle
+const F1_CAR_INDICES: Array[int] = [3, 4]  # f1_car, f1_car_blue
+const STREET_TRACK_INDICES: Array[int] = [0, 1, 2]  # oval, mountain, city
+const F1_TRACK_INDICES: Array[int] = [3, 4, 5]  # monaco, monza, spa
+
+func get_car_indices_for_mode() -> Array[int]:
+	if racing_mode == RacingMode.F1:
+		return F1_CAR_INDICES
+	return STREET_CAR_INDICES
+
+func get_track_indices_for_mode() -> Array[int]:
+	if racing_mode == RacingMode.F1:
+		return F1_TRACK_INDICES
+	return STREET_TRACK_INDICES
+
+func set_racing_mode(mode: RacingMode) -> void:
+	racing_mode = mode
+	var car_indices := get_car_indices_for_mode()
+	selected_car_index = car_indices[0]
+	var track_indices := get_track_indices_for_mode()
+	selected_track_index = track_indices[0]
