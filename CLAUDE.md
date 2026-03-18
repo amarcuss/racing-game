@@ -72,6 +72,19 @@ data/                # Data classes (future: PlayerProfile, RaceResult)
 | 2 | Cars | VehicleBody3D instances |
 | 3 | Checkpoints | Checkpoint Area3D (mask=2, detects cars) |
 
+## Racing Modes
+- **STREET** — sedan, coupe, muscle cars on oval/mountain/city circuits
+- **F1** — F1 cars on Monaco/Monza/Spa circuits
+- **BAJA 1000** — buggy, trophy truck, desert runner on point-to-point desert tracks (canyon, desert, coastal)
+
+### Point-to-Point Races
+Baja tracks use `is_point_to_point = true` in TrackData. Key differences:
+- RaceManager uses `finish_checkpoint_index` (last CP) instead of start/finish crossing
+- Checkpoints 0..N-2 are intermediate; checkpoint N-1 = finish line
+- AI controller uses `open_path = true` (clampf instead of fposmod, brakes near end)
+- HUD shows "CP X/Y" instead of "LAP X/Y"; minimap polyline is open (not closed)
+- Car tiers: 7 = buggy/desert_runner, 8 = trophy_truck
+
 ## Godot 4.6.1 Gotchas
 - `VehicleWheel3D.suspension_rest_length` renamed to `wheel_rest_length`
 - `class_name` types can't be used as type annotations without editor cache — use `Resource` base type

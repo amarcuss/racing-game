@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tracks/track_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+track_name = "Open Desert"
+description = "A vast open desert stage with wide roads and gentle rolling terrain. High speed with minimal barriers — pure flat-out racing."
+length_km = 5.0
+road_width = 18.0
+num_checkpoints = 12
+default_laps = 1
+difficulty = 1
+scene_path = "res://tracks/track_scenes/baja_desert.tscn"
+is_point_to_point = true

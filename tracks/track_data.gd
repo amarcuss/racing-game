@@ -11,3 +11,4 @@ extends Resource
 @export var default_laps: int = 3
 @export var difficulty: int = 1
 @export var scene_path: String = ""
+@export var is_point_to_point: bool = false

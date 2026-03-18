@@ -24,16 +24,19 @@ func _ready() -> void:
 	_setup_ui()
 
 	var track_checkpoints: int = track_node.get_num_checkpoints()
-	RaceManager.setup_race(GameManager.race_laps, track_checkpoints)
+	var track_data: Resource = GameManager.get_track_data(GameManager.selected_track_index)
+	var is_p2p: bool = track_data.is_point_to_point if track_data else false
+	RaceManager.setup_race(GameManager.race_laps, track_checkpoints, is_p2p)
 
 	# Wire track path for position tracking
 	if track_node.has_method("get_ai_path") and track_node.has_method("get_perimeter"):
 		RaceManager.set_track_path(track_node.get_ai_path(), track_node.get_perimeter())
 
-	# Set start/finish position for accurate position tracking
-	var cp0: Node = track_node.find_child("Checkpoint0")
-	if cp0:
-		RaceManager.set_start_finish_position(cp0.global_position)
+	# Set start/finish position for accurate position tracking (circuit only)
+	if not is_p2p:
+		var cp0: Node = track_node.find_child("Checkpoint0")
+		if cp0:
+			RaceManager.set_start_finish_position(cp0.global_position)
 
 	RaceManager.register_car(player_car)
 	for ai_car in ai_cars:
@@ -97,7 +100,7 @@ func _spawn_ai_cars() -> void:
 		var ai_car: VehicleBody3D = car_scene.instantiate()
 
 		# Pick a random car definition from available cars
-		var ai_car_indices: Array[int] = [0, 1, 2]
+		var ai_car_indices: Array[int] = GameManager.get_car_indices_for_mode()
 		var car_index: int = ai_car_indices[randi() % ai_car_indices.size()]
 		ai_car.car_data = GameManager.get_car_data(car_index)
 		if ai_path:
@@ -118,6 +121,10 @@ func _spawn_ai_cars() -> void:
 		# Setup path after adding to tree
 		if ai_path:
 			controller.setup(ai_path, track_perim)
+
+		# Set open path for point-to-point tracks
+		if RaceManager.is_point_to_point:
+			controller.open_path = true
 
 		ai_cars.append(ai_car)
 

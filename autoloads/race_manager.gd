@@ -39,8 +39,18 @@ var track_path: Path3D
 var track_perimeter: float = 0.0
 var start_finish_frac: float = 0.0
 
-func setup_race(laps: int, checkpoints: int) -> void:
-	total_laps = laps
+# Point-to-point mode
+var is_point_to_point: bool = false
+var finish_checkpoint_index: int = -1
+
+func setup_race(laps: int, checkpoints: int, point_to_point: bool = false) -> void:
+	is_point_to_point = point_to_point
+	if point_to_point:
+		total_laps = 1
+		finish_checkpoint_index = checkpoints - 1
+	else:
+		total_laps = laps
+		finish_checkpoint_index = -1
 	num_checkpoints = checkpoints
 	race_time = 0.0
 	countdown_timer = 0.0
@@ -83,10 +93,18 @@ func register_car(car: Node) -> void:
 	car_current_lap_start[car] = 0.0
 	car_finished[car] = false
 	car_positions[car] = registered_cars.size()
-	# Intermediate checkpoints (indices 1 through num_checkpoints-1)
 	var cp_flags: Array[bool] = []
-	for i in range(num_checkpoints - 1):
-		cp_flags.append(false)
+	if is_point_to_point:
+		# Flags for checkpoints 0..N-2 (all except finish checkpoint)
+		for i in range(num_checkpoints - 1):
+			cp_flags.append(false)
+		# Point-to-point cars are always "started" (no start/finish crossing needed)
+		car_started[car] = true
+		car_current_lap_start[car] = 0.0
+	else:
+		# Circuit: intermediate checkpoints (indices 1 through num_checkpoints-1)
+		for i in range(num_checkpoints - 1):
+			cp_flags.append(false)
 	car_checkpoints[car] = cp_flags
 
 func start_countdown() -> void:
@@ -134,14 +152,36 @@ func checkpoint_hit(checkpoint_index: int, car: Node) -> void:
 	if car_finished.get(car, false):
 		return
 
-	if checkpoint_index == 0:
-		_handle_start_finish(car)
+	if is_point_to_point:
+		_handle_point_to_point_checkpoint(checkpoint_index, car)
 	else:
-		# Mark intermediate checkpoint as hit
-		var idx: int = checkpoint_index - 1
+		if checkpoint_index == 0:
+			_handle_start_finish(car)
+		else:
+			# Mark intermediate checkpoint as hit
+			var idx: int = checkpoint_index - 1
+			var flags: Array = car_checkpoints[car]
+			if idx >= 0 and idx < flags.size():
+				flags[idx] = true
+
+func _handle_point_to_point_checkpoint(checkpoint_index: int, car: Node) -> void:
+	if checkpoint_index == finish_checkpoint_index:
+		# Check all intermediate flags
 		var flags: Array = car_checkpoints[car]
-		if idx >= 0 and idx < flags.size():
-			flags[idx] = true
+		for hit in flags:
+			if not hit:
+				return
+		# All checkpoints hit — car finishes
+		car_laps[car] = 1
+		var lap_time: float = race_time - car_current_lap_start[car]
+		car_lap_times[car].append(lap_time)
+		lap_completed.emit(car, 1)
+		_car_finish(car)
+	else:
+		# Mark as intermediate checkpoint
+		var flags: Array = car_checkpoints[car]
+		if checkpoint_index >= 0 and checkpoint_index < flags.size():
+			flags[checkpoint_index] = true
 
 func _handle_start_finish(car: Node) -> void:
 	if not car_started.get(car, false):
@@ -237,6 +277,9 @@ func _get_track_fraction(car: Node) -> float:
 		return 0.0
 	var curve_len: float = track_path.curve.get_baked_length()
 	var offset: float = track_path.curve.get_closest_offset(car.global_position)
+	if is_point_to_point:
+		# Open path — raw fraction, no wrapping
+		return offset / curve_len
 	# Shift so start/finish line becomes fraction 0.0
 	# Prevents position jumps at the curve origin wrap point
 	var shifted: float = fposmod((offset / curve_len) - start_finish_frac, 1.0)
@@ -272,6 +315,8 @@ func get_finish_position(car: Node) -> int:
 
 func reset() -> void:
 	state = RaceState.IDLE
+	is_point_to_point = false
+	finish_checkpoint_index = -1
 	car_laps.clear()
 	car_checkpoints.clear()
 	car_started.clear()

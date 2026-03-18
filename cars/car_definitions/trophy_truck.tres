@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="CarData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://cars/car_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+car_name = "Trophy Truck"
+tier = 8
+price = 8000
+description = "Purpose-built off-road racing truck for the Baja 1000. Powerful V8, wide stance, and aggressive tires dominate the desert."
+max_speed_kph = 200.0
+drive_type = 2
+mass_kg = 1500.0
+torque_low_rpm = 5500.0
+torque_peak_rpm = 7000.0
+torque_high_rpm = 4500.0
+drag_coefficient = 0.45
+downforce_coefficient = 0.06
+brake_force = 45.0
+brake_bias = 0.6
+weight_transfer_factor = 0.15
+drift_friction_slip = 1.5
+drift_steer_multiplier = 1.3
+normal_friction_slip = 2.5
+suspension_rest_length = 0.2
+suspension_stiffness = 55.0
+suspension_travel = 0.15
+damping_compression = 1.4
+damping_relaxation = 1.7
+wheel_radius = 0.38
+max_steering_angle = 0.38
+body_color = Color(0.1, 0.1, 0.8, 1)
+secondary_color = Color(0.9, 0.9, 0.9, 1)
+body_width = 2.2
+body_length = 5.0
+body_height = 0.7
+cabin_height = 0.6
+cabin_offset_z = -0.1
+hood_scoop = true
+rear_spoiler = false
+spoiler_height = 0.0

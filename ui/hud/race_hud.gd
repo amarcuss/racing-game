@@ -261,8 +261,8 @@ func _on_minimap_draw() -> void:
 		var scale_val: float = draw_size / maxf(range_vec.x, range_vec.y)
 		var centered: Vector2 = pt - minimap_bounds_min - range_vec * 0.5
 		scaled_points.append(Vector2(MINIMAP_SIZE * 0.5 + centered.x * scale_val, MINIMAP_SIZE * 0.5 + centered.y * scale_val))
-	# Close the loop
-	if scaled_points.size() > 1:
+	# Close the loop (only for circuit tracks)
+	if scaled_points.size() > 1 and not RaceManager.is_point_to_point:
 		scaled_points.append(scaled_points[0])
 	minimap_draw.draw_polyline(scaled_points, Color(0.5, 0.5, 0.6, 0.6), 2.0, true)
 
@@ -292,9 +292,23 @@ func _update_speed() -> void:
 	speed_label.text = str(int(player_car.current_speed_kph))
 
 func _update_lap() -> void:
-	var completed: int = RaceManager.get_car_lap(player_car)
-	var current_lap: int = mini(completed + 1, RaceManager.total_laps)
-	lap_label.text = "LAP %d/%d" % [current_lap, RaceManager.total_laps]
+	if RaceManager.is_point_to_point:
+		# Show checkpoint progress instead of laps
+		var cp_hit: int = _count_player_checkpoints()
+		var cp_total: int = RaceManager.num_checkpoints
+		lap_label.text = "CP %d/%d" % [cp_hit, cp_total]
+	else:
+		var completed: int = RaceManager.get_car_lap(player_car)
+		var current_lap: int = mini(completed + 1, RaceManager.total_laps)
+		lap_label.text = "LAP %d/%d" % [current_lap, RaceManager.total_laps]
+
+func _count_player_checkpoints() -> int:
+	var flags: Array = RaceManager.car_checkpoints.get(player_car, [])
+	var count: int = 0
+	for hit in flags:
+		if hit:
+			count += 1
+	return count
 
 func _update_timer() -> void:
 	timer_label.text = _format_time(RaceManager.race_time)

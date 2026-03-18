@@ -338,6 +338,10 @@ func _build_car_mesh() -> void:
 			mesh_script = load("res://cars/car_meshes/muscle_mesh.gd")
 		4:
 			mesh_script = load("res://cars/car_meshes/f1_mesh.gd")
+		7:
+			mesh_script = load("res://cars/car_meshes/buggy_mesh.gd")
+		8:
+			mesh_script = load("res://cars/car_meshes/trophy_truck_mesh.gd")
 		_:
 			mesh_script = load("res://cars/car_meshes/sedan_mesh.gd")
 

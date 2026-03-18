@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tracks/track_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+track_name = "Coastal Stage"
+description = "Starting in dry desert, the road narrows as it climbs coastal cliffs. Cliff-side barriers and ocean views make this the most demanding Baja stage."
+length_km = 3.5
+road_width = 14.0
+num_checkpoints = 8
+default_laps = 1
+difficulty = 3
+scene_path = "res://tracks/track_scenes/baja_coastal.tscn"
+is_point_to_point = true

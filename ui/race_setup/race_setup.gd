@@ -20,6 +20,7 @@ var laps_label: Label
 var ai_label: Label
 var difficulty_label: Label
 var summary_label: Label
+var laps_row: HBoxContainer
 
 func _ready() -> void:
 	laps_value = GameManager.race_laps
@@ -68,7 +69,14 @@ func _build_ui() -> void:
 
 	# Laps spinner
 	_create_spinner(panel, "LAPS", 50, laps_value, 1, 10, func(v: int): laps_value = v; _update_display())
-	laps_label = panel.get_child(panel.get_child_count() - 1).get_child(1) as Label
+	laps_row = panel.get_child(panel.get_child_count() - 1) as HBoxContainer
+	laps_label = laps_row.get_child(1) as Label
+
+	# Hide laps for point-to-point tracks
+	var track_data_check: Resource = GameManager.get_selected_track_data()
+	if track_data_check and track_data_check.get("is_point_to_point") and track_data_check.is_point_to_point:
+		laps_value = 1
+		laps_row.visible = false
 
 	# AI opponents spinner
 	_create_spinner(panel, "AI OPPONENTS", 150, ai_count_value, 0, 7, func(v: int): ai_count_value = v; _update_display())
@@ -159,9 +167,10 @@ func _update_display() -> void:
 	var car_name: String = car_data.car_name if car_data else "Unknown"
 	var track_name: String = track_data.track_name if track_data else "Unknown"
 	var mode_str: String = "2P SPLIT" if GameManager.split_screen else "1P"
+	var laps_str: String = "point-to-point" if (laps_row and not laps_row.visible) else "%d laps" % laps_value
 	if summary_label:
-		summary_label.text = "%s  |  %s  |  %d laps  |  %d AI  |  %s  |  %s" % [
-			car_name, track_name, laps_value, ai_count_value, DIFFICULTY_NAMES[difficulty_value], mode_str]
+		summary_label.text = "%s  |  %s  |  %s  |  %d AI  |  %s  |  %s" % [
+			car_name, track_name, laps_str, ai_count_value, DIFFICULTY_NAMES[difficulty_value], mode_str]
 
 func _on_back() -> void:
 	GameManager.transition_to_scene("res://ui/track_select/track_select.tscn")

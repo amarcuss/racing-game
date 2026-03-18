@@ -14,6 +14,7 @@ var perimeter: float = 0.0
 
 # Path tracking
 var last_offset: float = 0.0
+var open_path: bool = false
 
 # Difficulty parameters
 var speed_factor: float = 0.88
@@ -67,10 +68,21 @@ func _physics_process(delta: float) -> void:
 	if RaceManager.state != RaceManager.RaceState.RACING:
 		car.set_inputs(0.0, 0.0, 0.0, false)
 		return
+	if RaceManager.car_finished.get(car, false):
+		car.set_inputs(0.0, 1.0, 0.0, false)
+		return
 
 	_update_rubber_banding(delta)
 	var offset: float = _find_closest_offset()
 	last_offset = offset
+
+	# Point-to-point: slow down near finish
+	if open_path:
+		var curve_length: float = curve.get_baked_length()
+		var remaining: float = curve_length - offset
+		if remaining < 10.0:
+			car.set_inputs(0.0, 1.0, 0.0, false)
+			return
 
 	var speed_kph: float = car.current_speed_kph
 	var max_speed: float = minf(car.car_data.max_speed_kph * speed_factor, speed_cap_kph) * rubber_band_multiplier
@@ -120,7 +132,11 @@ func _find_closest_offset() -> float:
 
 	var s: float = start_s
 	while s <= end_s:
-		var wrapped: float = fposmod(s, curve_length)
+		var wrapped: float
+		if open_path:
+			wrapped = clampf(s, 0.0, curve_length)
+		else:
+			wrapped = fposmod(s, curve_length)
 		var p: Vector3 = curve.sample_baked(wrapped)
 		var d: float = car_pos.distance_squared_to(p)
 		if d < best_dist:
@@ -133,7 +149,11 @@ func _find_closest_offset() -> float:
 	end_s = best_offset + 1.0
 	s = start_s
 	while s <= end_s:
-		var wrapped: float = fposmod(s, curve_length)
+		var wrapped: float
+		if open_path:
+			wrapped = clampf(s, 0.0, curve_length)
+		else:
+			wrapped = fposmod(s, curve_length)
 		var p: Vector3 = curve.sample_baked(wrapped)
 		var d: float = car_pos.distance_squared_to(p)
 		if d < best_dist:
@@ -145,7 +165,11 @@ func _find_closest_offset() -> float:
 
 func _compute_steering(offset: float, look_ahead: float) -> float:
 	var curve_length: float = curve.get_baked_length()
-	var target_offset: float = fposmod(offset + look_ahead, curve_length)
+	var target_offset: float
+	if open_path:
+		target_offset = clampf(offset + look_ahead, 0.0, curve_length)
+	else:
+		target_offset = fposmod(offset + look_ahead, curve_length)
 	var target_pos: Vector3 = curve.sample_baked(target_offset)
 
 	# Convert to car-local space
@@ -167,10 +191,19 @@ func _compute_target_speed(offset: float, look_ahead: float, max_speed: float) -
 	var curve_length: float = curve.get_baked_length()
 
 	# Sample two points ahead to measure curvature
-	var ahead1_offset: float = fposmod(offset + look_ahead * brake_distance_factor, curve_length)
-	var ahead2_offset: float = fposmod(offset + look_ahead * brake_distance_factor * 1.5, curve_length)
+	var ahead1_offset: float
+	var ahead2_offset: float
+	var sample_offset: float
+	if open_path:
+		ahead1_offset = clampf(offset + look_ahead * brake_distance_factor, 0.0, curve_length)
+		ahead2_offset = clampf(offset + look_ahead * brake_distance_factor * 1.5, 0.0, curve_length)
+		sample_offset = clampf(offset, 0.0, curve_length)
+	else:
+		ahead1_offset = fposmod(offset + look_ahead * brake_distance_factor, curve_length)
+		ahead2_offset = fposmod(offset + look_ahead * brake_distance_factor * 1.5, curve_length)
+		sample_offset = fposmod(offset, curve_length)
 
-	var p0: Vector3 = curve.sample_baked(fposmod(offset, curve_length))
+	var p0: Vector3 = curve.sample_baked(sample_offset)
 	var p1: Vector3 = curve.sample_baked(ahead1_offset)
 	var p2: Vector3 = curve.sample_baked(ahead2_offset)
 
@@ -225,7 +258,11 @@ func _unstick() -> void:
 	var pos: Vector3 = curve.sample_baked(offset) + Vector3.UP * 1.5
 
 	# Get forward direction from curve
-	var ahead_offset: float = fposmod(offset + 2.0, curve_length)
+	var ahead_offset: float
+	if open_path:
+		ahead_offset = clampf(offset + 2.0, 0.0, curve_length)
+	else:
+		ahead_offset = fposmod(offset + 2.0, curve_length)
 	var ahead_pos: Vector3 = curve.sample_baked(ahead_offset)
 	var forward: Vector3 = (ahead_pos - pos).normalized()
 	forward.y = 0.0

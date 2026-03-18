@@ -16,7 +16,7 @@ var sub_viewport: SubViewport
 var btn_box: VBoxContainer
 var mode_label: Label
 
-const MODE_NAMES: Array[String] = ["STREET RACING", "F1"]
+const MODE_NAMES: Array[String] = ["STREET RACING", "F1", "BAJA 1000"]
 
 func _ready() -> void:
 	layer = 10
@@ -230,6 +230,10 @@ func _create_car_visual(parent: Node3D, car_index: int) -> void:
 			mesh_script = load("res://cars/car_meshes/muscle_mesh.gd")
 		4:
 			mesh_script = load("res://cars/car_meshes/f1_mesh.gd")
+		7:
+			mesh_script = load("res://cars/car_meshes/buggy_mesh.gd")
+		8:
+			mesh_script = load("res://cars/car_meshes/trophy_truck_mesh.gd")
 		_:
 			mesh_script = load("res://cars/car_meshes/sedan_mesh.gd")
 
@@ -245,9 +249,10 @@ func _update_credits_display() -> void:
 		credits_label.text = "$%d" % SaveManager.profile.credits
 
 func _switch_mode(direction: int) -> void:
-	var new_mode: int = (GameManager.racing_mode + direction) % 2
+	var num_modes: int = GameManager.NUM_RACING_MODES
+	var new_mode: int = (GameManager.racing_mode + direction) % num_modes
 	if new_mode < 0:
-		new_mode = 1
+		new_mode = num_modes - 1
 	GameManager.set_racing_mode(new_mode as GameManager.RacingMode)
 	mode_label.text = MODE_NAMES[GameManager.racing_mode]
 	# Update car preview

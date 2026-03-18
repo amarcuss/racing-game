@@ -3,7 +3,7 @@ extends Node
 ## Game manager — state holder, car/track registry, scene transitions.
 
 enum GameState { MENU, RACING, PAUSED }
-enum RacingMode { STREET, F1 }
+enum RacingMode { STREET, F1, BAJA }
 
 var state: GameState = GameState.MENU
 var racing_mode: RacingMode = RacingMode.STREET
@@ -25,6 +25,9 @@ const CAR_PATHS: Array[String] = [
 	"res://cars/car_definitions/f1_car_blue.tres",
 	"res://cars/car_definitions/super_car.tres",
 	"res://cars/car_definitions/hyper_car.tres",
+	"res://cars/car_definitions/baja_buggy.tres",
+	"res://cars/car_definitions/trophy_truck.tres",
+	"res://cars/car_definitions/desert_runner.tres",
 ]
 
 const TRACK_PATHS: Array[String] = [
@@ -34,6 +37,9 @@ const TRACK_PATHS: Array[String] = [
 	"res://tracks/track_definitions/f1_monaco.tres",
 	"res://tracks/track_definitions/f1_monza.tres",
 	"res://tracks/track_definitions/f1_spa.tres",
+	"res://tracks/track_definitions/baja_canyon.tres",
+	"res://tracks/track_definitions/baja_desert.tres",
+	"res://tracks/track_definitions/baja_coastal.tres",
 ]
 
 # Fade transition
@@ -127,18 +133,30 @@ func get_selected_track_data() -> Resource:
 # Mode-filtered indices
 const STREET_CAR_INDICES: Array[int] = [0, 1, 2]  # sedan, coupe, muscle
 const F1_CAR_INDICES: Array[int] = [3, 4]  # f1_car, f1_car_blue
+const BAJA_CAR_INDICES: Array[int] = [7, 8, 9]  # buggy, trophy_truck, desert_runner
 const STREET_TRACK_INDICES: Array[int] = [0, 1, 2]  # oval, mountain, city
 const F1_TRACK_INDICES: Array[int] = [3, 4, 5]  # monaco, monza, spa
+const BAJA_TRACK_INDICES: Array[int] = [6, 7, 8]  # canyon, desert, coastal
 
 func get_car_indices_for_mode() -> Array[int]:
-	if racing_mode == RacingMode.F1:
-		return F1_CAR_INDICES
-	return STREET_CAR_INDICES
+	match racing_mode:
+		RacingMode.F1:
+			return F1_CAR_INDICES
+		RacingMode.BAJA:
+			return BAJA_CAR_INDICES
+		_:
+			return STREET_CAR_INDICES
 
 func get_track_indices_for_mode() -> Array[int]:
-	if racing_mode == RacingMode.F1:
-		return F1_TRACK_INDICES
-	return STREET_TRACK_INDICES
+	match racing_mode:
+		RacingMode.F1:
+			return F1_TRACK_INDICES
+		RacingMode.BAJA:
+			return BAJA_TRACK_INDICES
+		_:
+			return STREET_TRACK_INDICES
+
+const NUM_RACING_MODES: int = 3
 
 func set_racing_mode(mode: RacingMode) -> void:
 	racing_mode = mode
