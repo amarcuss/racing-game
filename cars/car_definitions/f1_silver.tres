@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="CarData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://cars/car_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+car_name = "F1 Silver Arrow"
+tier = 4
+price = 8500
+description = "The Silver Arrow is a perfectly balanced F1 machine. No glaring weaknesses and no dominant strength — just consistent, reliable pace that rewards smooth driving and precise racecraft."
+
+max_speed_kph = 342.0
+drive_type = 1
+mass_kg = 795.0
+
+torque_low_rpm = 6100.0
+torque_peak_rpm = 8100.0
+torque_high_rpm = 5600.0
+
+drag_coefficient = 0.44
+downforce_coefficient = 0.90
+
+brake_force = 62.0
+brake_bias = 0.57
+
+weight_transfer_factor = 0.08
+
+drift_friction_slip = 2.0
+drift_steer_multiplier = 1.2
+normal_friction_slip = 4.3
+
+suspension_rest_length = 0.08
+suspension_stiffness = 122.0
+suspension_travel = 0.06
+damping_compression = 2.5
+damping_relaxation = 3.0
+
+wheel_radius = 0.33
+max_steering_angle = 0.32
+
+body_color = Color(0.75, 0.77, 0.78, 1)
+secondary_color = Color(0.0, 0.6, 0.6, 1)
+body_width = 2.0
+body_length = 5.5
+body_height = 0.35
+cabin_height = 0.4
+cabin_offset_z = -0.4
+hood_scoop = false
+rear_spoiler = true
+spoiler_height = 0.35

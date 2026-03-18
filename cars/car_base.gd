@@ -62,12 +62,19 @@ var _bang_sign: float = 1.0         # polarity of current bang
 var slipstream_active: bool = false
 var slipstream_ray: RayCast3D
 
+# DRS (F1 only)
+var drs_available: bool = false
+var drs_active: bool = false
+var drs_gap_timer: float = 0.0
+
 const DRIFT_SLIP_THRESHOLD: float = 0.3
 const DRIFT_RECOVERY_TIME: float = 0.5
 const STUCK_TIMEOUT: float = 2.0
 const SLIPSTREAM_RANGE: float = 20.0
 const SLIPSTREAM_DRAG_REDUCTION: float = 0.3
 const SLIPSTREAM_MIN_SPEED: float = 100.0
+const DRS_DRAG_REDUCTION: float = 0.50
+const DRS_MIN_SPEED: float = 80.0
 const REVERSE_FORCE_FACTOR: float = 0.3
 
 func _ready() -> void:
@@ -143,6 +150,7 @@ func _physics_process(delta: float) -> void:
 	_apply_weight_transfer()
 	_update_drift_state(delta)
 	_check_slipstream()
+	_update_drs(delta)
 	_apply_anti_flip(delta)
 	_check_stuck(delta)
 	_update_brake_lights()
@@ -197,6 +205,23 @@ func _apply_steering() -> void:
 
 	steering = -steering_input * steer_angle * speed_reduction
 
+func _update_drs(delta: float) -> void:
+	# DRS only available for F1 cars (tier 4)
+	if not car_data or car_data.tier != 4:
+		drs_available = false
+		drs_active = false
+		return
+
+	# DRS becomes available when within slipstream range for 0.5s
+	if slipstream_active and current_speed_kph > DRS_MIN_SPEED:
+		drs_gap_timer += delta
+		if drs_gap_timer >= 0.5:
+			drs_available = true
+	else:
+		drs_gap_timer = 0.0
+		drs_available = false
+		drs_active = false
+
 func _apply_aerodynamics() -> void:
 	var speed_ms: float = linear_velocity.length()
 	if speed_ms < 1.0:
@@ -205,13 +230,19 @@ func _apply_aerodynamics() -> void:
 	var velocity_dir: Vector3 = linear_velocity.normalized()
 
 	var drag: float = car_data.drag_coefficient
-	if slipstream_active and current_speed_kph > SLIPSTREAM_MIN_SPEED:
+	if drs_active and car_data.tier == 4:
+		# DRS gives bigger drag reduction than standard slipstream
+		drag *= (1.0 - DRS_DRAG_REDUCTION)
+	elif slipstream_active and current_speed_kph > SLIPSTREAM_MIN_SPEED:
 		drag *= (1.0 - SLIPSTREAM_DRAG_REDUCTION)
 
 	var drag_force: Vector3 = -velocity_dir * drag * speed_ms * speed_ms
 	apply_central_force(drag_force)
 
 	var downforce: float = car_data.downforce_coefficient * speed_ms * speed_ms
+	# DRS reduces downforce too (rear wing opens)
+	if drs_active and car_data.tier == 4:
+		downforce *= 0.7
 	apply_central_force(Vector3(0, -downforce, 0))
 
 func _apply_weight_transfer() -> void:
@@ -482,8 +513,11 @@ func _fill_audio_buffer(delta: float) -> void:
 	var speed_ratio: float = clampf(current_speed_kph / car_data.max_speed_kph, 0.0, 1.0)
 	_engine_rpm_norm = lerpf(_engine_rpm_norm, speed_ratio, 5.0 * delta)
 
-	# Very low fundamental: 25Hz idle → 120Hz redline — deep rumble, not a scream
-	_engine_target_freq = lerpf(25.0, 120.0, _engine_rpm_norm)
+	# Engine frequency — F1 cars have a higher-pitched V6 turbo-hybrid
+	if car_data.tier == 4:
+		_engine_target_freq = lerpf(60.0, 280.0, _engine_rpm_norm)
+	else:
+		_engine_target_freq = lerpf(25.0, 120.0, _engine_rpm_norm)
 	_engine_current_freq = lerpf(_engine_current_freq, _engine_target_freq, 0.12)
 
 	# Volume: idle quiet, builds with RPM and throttle
@@ -511,8 +545,12 @@ func _fill_audio_buffer(delta: float) -> void:
 	var sample_rate: float = 44100.0
 	var increment: float = _engine_current_freq / sample_rate
 
-	# Cascaded low-pass: very aggressive to kill buzz. Opens slightly at high RPM
-	var lp_alpha: float = clampf(lerpf(0.06, 0.18, _engine_rpm_norm), 0.04, 0.25)
+	# Cascaded low-pass: opens more for F1's higher-pitched whine
+	var lp_alpha: float
+	if car_data.tier == 4:
+		lp_alpha = clampf(lerpf(0.12, 0.35, _engine_rpm_norm), 0.10, 0.40)
+	else:
+		lp_alpha = clampf(lerpf(0.06, 0.18, _engine_rpm_norm), 0.04, 0.25)
 
 	# Bang duration in samples (~50ms = gunshot length)
 	var bang_len: int = int(sample_rate * 0.05)
@@ -520,18 +558,34 @@ func _fill_audio_buffer(delta: float) -> void:
 	for i in range(frames_available):
 		var p: float = _engine_phase
 
-		# V8-style firing
 		var pulse: float = 0.0
-		var p1: float = fmod(p, 1.0)
-		var p2: float = fmod(p + 0.45, 1.0)
-		if p1 < 0.2:
-			pulse += sin(p1 / 0.2 * PI) * 0.7
-		if p2 < 0.2:
-			pulse += sin(p2 / 0.2 * PI) * 0.55
+		var rumble: float = 0.0
 
-		# Sub-bass rumble
-		_exhaust_phase = fmod(_exhaust_phase + increment * 0.5, 1.0)
-		var rumble: float = sin(_exhaust_phase * TAU) * 0.35
+		if car_data.tier == 4:
+			# V6 turbo-hybrid — sharper, higher-pitched firing with turbo whine
+			var p1: float = fmod(p, 1.0)
+			var p2: float = fmod(p + 0.333, 1.0)
+			var p3: float = fmod(p + 0.666, 1.0)
+			if p1 < 0.15:
+				pulse += sin(p1 / 0.15 * PI) * 0.6
+			if p2 < 0.15:
+				pulse += sin(p2 / 0.15 * PI) * 0.5
+			if p3 < 0.15:
+				pulse += sin(p3 / 0.15 * PI) * 0.4
+			# Turbo whine overtone
+			_exhaust_phase = fmod(_exhaust_phase + increment * 2.0, 1.0)
+			rumble = sin(_exhaust_phase * TAU) * 0.2
+		else:
+			# V8-style firing
+			var p1: float = fmod(p, 1.0)
+			var p2: float = fmod(p + 0.45, 1.0)
+			if p1 < 0.2:
+				pulse += sin(p1 / 0.2 * PI) * 0.7
+			if p2 < 0.2:
+				pulse += sin(p2 / 0.2 * PI) * 0.55
+			# Sub-bass rumble
+			_exhaust_phase = fmod(_exhaust_phase + increment * 0.5, 1.0)
+			rumble = sin(_exhaust_phase * TAU) * 0.35
 
 		var sample: float = pulse * 0.5 + rumble
 

@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="CarData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://cars/car_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+car_name = "F1 Stallion"
+tier = 4
+price = 7500
+description = "The Stallion prioritizes stability and predictability over outright pace. Heavy braking zones and high-speed sweepers are where this car shines, thanks to its strong downforce and firm suspension."
+
+max_speed_kph = 330.0
+drive_type = 1
+mass_kg = 800.0
+
+torque_low_rpm = 5700.0
+torque_peak_rpm = 7500.0
+torque_high_rpm = 5200.0
+
+drag_coefficient = 0.48
+downforce_coefficient = 1.10
+
+brake_force = 65.0
+brake_bias = 0.58
+
+weight_transfer_factor = 0.07
+
+drift_friction_slip = 2.1
+drift_steer_multiplier = 1.15
+normal_friction_slip = 4.4
+
+suspension_rest_length = 0.08
+suspension_stiffness = 130.0
+suspension_travel = 0.055
+damping_compression = 2.8
+damping_relaxation = 3.3
+
+wheel_radius = 0.33
+max_steering_angle = 0.33
+
+body_color = Color(0.95, 0.95, 0.95, 1)
+secondary_color = Color(0.8, 0.1, 0.1, 1)
+body_width = 2.0
+body_length = 5.5
+body_height = 0.35
+cabin_height = 0.4
+cabin_offset_z = -0.4
+hood_scoop = false
+rear_spoiler = true
+spoiler_height = 0.35

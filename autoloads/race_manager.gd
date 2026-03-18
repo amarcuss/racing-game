@@ -110,8 +110,13 @@ func register_car(car: Node) -> void:
 func start_countdown() -> void:
 	state = RaceState.COUNTDOWN
 	countdown_timer = 0.0
-	countdown_current = 3
-	countdown_tick.emit(3)
+	# F1 mode uses 5 red lights; others use 3-2-1-GO
+	if GameManager.racing_mode == GameManager.RacingMode.F1:
+		countdown_current = 5
+		countdown_tick.emit(5)
+	else:
+		countdown_current = 3
+		countdown_tick.emit(3)
 	race_state_changed.emit(RaceState.COUNTDOWN)
 
 func _physics_process(delta: float) -> void:

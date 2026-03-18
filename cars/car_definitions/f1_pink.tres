@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="CarData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://cars/car_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+car_name = "F1 Alpine"
+tier = 4
+price = 7800
+description = "The Alpine is a dependable mid-pack contender with forgiving handling and decent straight-line speed. A great choice for drivers still learning F1-level performance."
+
+max_speed_kph = 334.0
+drive_type = 1
+mass_kg = 798.0
+
+torque_low_rpm = 5800.0
+torque_peak_rpm = 7700.0
+torque_high_rpm = 5300.0
+
+drag_coefficient = 0.46
+downforce_coefficient = 0.92
+
+brake_force = 59.0
+brake_bias = 0.57
+
+weight_transfer_factor = 0.08
+
+drift_friction_slip = 2.0
+drift_steer_multiplier = 1.2
+normal_friction_slip = 4.2
+
+suspension_rest_length = 0.08
+suspension_stiffness = 120.0
+suspension_travel = 0.06
+damping_compression = 2.5
+damping_relaxation = 3.0
+
+wheel_radius = 0.33
+max_steering_angle = 0.32
+
+body_color = Color(0.0, 0.35, 0.75, 1)
+secondary_color = Color(0.95, 0.3, 0.5, 1)
+body_width = 2.0
+body_length = 5.5
+body_height = 0.35
+cabin_height = 0.4
+cabin_offset_z = -0.4
+hood_scoop = false
+rear_spoiler = true
+spoiler_height = 0.35

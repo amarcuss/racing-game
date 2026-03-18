@@ -23,8 +23,14 @@ const CAR_PATHS: Array[String] = [
 	"res://cars/car_definitions/muscle_car.tres",
 	"res://cars/car_definitions/f1_car.tres",
 	"res://cars/car_definitions/f1_car_blue.tres",
-	"res://cars/car_definitions/super_car.tres",
-	"res://cars/car_definitions/hyper_car.tres",
+	"res://cars/car_definitions/f1_silver.tres",
+	"res://cars/car_definitions/f1_orange.tres",
+	"res://cars/car_definitions/f1_green.tres",
+	"res://cars/car_definitions/f1_pink.tres",
+	"res://cars/car_definitions/f1_white.tres",
+	"res://cars/car_definitions/f1_navy.tres",
+	"res://cars/car_definitions/f1_teal.tres",
+	"res://cars/car_definitions/f1_yellow.tres",
 	"res://cars/car_definitions/baja_buggy.tres",
 	"res://cars/car_definitions/trophy_truck.tres",
 	"res://cars/car_definitions/desert_runner.tres",
@@ -132,8 +138,8 @@ func get_selected_track_data() -> Resource:
 
 # Mode-filtered indices
 const STREET_CAR_INDICES: Array[int] = [0, 1, 2]  # sedan, coupe, muscle
-const F1_CAR_INDICES: Array[int] = [3, 4]  # f1_car, f1_car_blue
-const BAJA_CAR_INDICES: Array[int] = [7, 8, 9]  # buggy, trophy_truck, desert_runner
+const F1_CAR_INDICES: Array[int] = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]  # 10 F1 cars
+const BAJA_CAR_INDICES: Array[int] = [13, 14, 15]  # buggy, trophy_truck, desert_runner
 const STREET_TRACK_INDICES: Array[int] = [0, 1, 2]  # oval, mountain, city
 const F1_TRACK_INDICES: Array[int] = [3, 4, 5]  # monaco, monza, spa
 const BAJA_TRACK_INDICES: Array[int] = [6, 7, 8]  # canyon, desert, coastal

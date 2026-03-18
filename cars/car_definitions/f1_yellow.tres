@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="CarData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://cars/car_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+car_name = "F1 Williams"
+tier = 4
+price = 7600
+description = "The Williams is the lightest car on the grid. Its featherweight construction gives it nimble turn-in and strong acceleration out of slow corners, punching above its modest power figures."
+
+max_speed_kph = 338.0
+drive_type = 1
+mass_kg = 780.0
+
+torque_low_rpm = 5800.0
+torque_peak_rpm = 7900.0
+torque_high_rpm = 5300.0
+
+drag_coefficient = 0.44
+downforce_coefficient = 0.88
+
+brake_force = 58.0
+brake_bias = 0.56
+
+weight_transfer_factor = 0.09
+
+drift_friction_slip = 2.0
+drift_steer_multiplier = 1.2
+normal_friction_slip = 4.2
+
+suspension_rest_length = 0.08
+suspension_stiffness = 118.0
+suspension_travel = 0.06
+damping_compression = 2.4
+damping_relaxation = 2.9
+
+wheel_radius = 0.33
+max_steering_angle = 0.32
+
+body_color = Color(0.0, 0.2, 0.55, 1)
+secondary_color = Color(1.0, 1.0, 0.2, 1)
+body_width = 2.0
+body_length = 5.5
+body_height = 0.35
+cabin_height = 0.4
+cabin_offset_z = -0.4
+hood_scoop = false
+rear_spoiler = true
+spoiler_height = 0.35

@@ -5,7 +5,7 @@ extends Node3D
 ## All geometry built procedurally via ArrayMesh.
 
 # --- Track geometry constants ---
-const ROAD_WIDTH: float = 14.0
+const ROAD_WIDTH: float = 22.0
 const ROAD_Y: float = 0.15
 const NUM_SEGMENTS: int = 1024
 const BARRIER_HEIGHT: float = 1.2

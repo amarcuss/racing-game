@@ -23,9 +23,28 @@ var summary_label: Label
 var laps_row: HBoxContainer
 
 func _ready() -> void:
-	laps_value = GameManager.race_laps
-	ai_count_value = GameManager.ai_count
+	# Use track default laps
+	var track_data: Resource = GameManager.get_selected_track_data()
+	if track_data and track_data.get("default_laps"):
+		laps_value = track_data.default_laps
+		GameManager.race_laps = laps_value
+	else:
+		laps_value = GameManager.race_laps
 	difficulty_value = GameManager.ai_difficulty
+
+	# Set sensible AI defaults per mode
+	match GameManager.racing_mode:
+		GameManager.RacingMode.F1:
+			ai_count_value = 19
+			difficulty_value = 2
+		GameManager.RacingMode.BAJA:
+			ai_count_value = mini(GameManager.ai_count, 5)
+			if ai_count_value > 5:
+				ai_count_value = 5
+		_:
+			ai_count_value = mini(GameManager.ai_count, 7)
+	GameManager.ai_count = ai_count_value
+	GameManager.ai_difficulty = difficulty_value
 
 	ui_layer = CanvasLayer.new()
 	ui_layer.layer = 10
@@ -67,8 +86,9 @@ func _build_ui() -> void:
 	panel_sb.bg_color = BG_MID
 	panel_sb.set_corner_radius_all(12)
 
-	# Laps spinner
-	_create_spinner(panel, "LAPS", 50, laps_value, 1, 10, func(v: int): laps_value = v; _update_display())
+	# Laps spinner — F1 allows more laps
+	var max_laps: int = 20 if GameManager.racing_mode == GameManager.RacingMode.F1 else 10
+	_create_spinner(panel, "LAPS", 50, laps_value, 1, max_laps, func(v: int): laps_value = v; _update_display())
 	laps_row = panel.get_child(panel.get_child_count() - 1) as HBoxContainer
 	laps_label = laps_row.get_child(1) as Label
 
@@ -78,8 +98,12 @@ func _build_ui() -> void:
 		laps_value = 1
 		laps_row.visible = false
 
-	# AI opponents spinner
-	_create_spinner(panel, "AI OPPONENTS", 150, ai_count_value, 0, 7, func(v: int): ai_count_value = v; _update_display())
+	# AI opponents spinner — capped per mode
+	var max_ai: int = 7
+	match GameManager.racing_mode:
+		GameManager.RacingMode.F1: max_ai = 19
+		GameManager.RacingMode.BAJA: max_ai = 5
+	_create_spinner(panel, "AI OPPONENTS", 150, ai_count_value, 0, max_ai, func(v: int): ai_count_value = v; _update_display())
 	ai_label = panel.get_child(panel.get_child_count() - 1).get_child(1) as Label
 
 	# Difficulty spinner

@@ -51,11 +51,18 @@ var speed_label: Label
 var throttle_bar: ColorRect
 var brake_bar: ColorRect
 
+# DRS indicator (F1 only)
+var drs_label: Label
+var is_f1_mode: bool = false
+
 func _ready() -> void:
+	is_f1_mode = GameManager.racing_mode == GameManager.RacingMode.F1
 	_build_top_bar()
 	_build_info_labels()
 	_build_speed_display()
 	_build_minimap()
+	if is_f1_mode:
+		_build_drs_indicator()
 	RaceManager.lap_completed.connect(_on_lap_completed)
 
 func set_player_car(car: VehicleBody3D) -> void:
@@ -193,6 +200,19 @@ func _build_speed_display() -> void:
 	brake_bar.size = Vector2(0, BAR_HEIGHT)
 	panel.add_child(brake_bar)
 
+func _build_drs_indicator() -> void:
+	drs_label = Label.new()
+	drs_label.text = "DRS"
+	drs_label.add_theme_font_size_override("font_size", 32)
+	drs_label.add_theme_color_override("font_color", TEXT_SECONDARY)
+	drs_label.add_theme_constant_override("outline_size", 3)
+	drs_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	drs_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	drs_label.position = Vector2(screen_offset_x + screen_width - 260, 830)
+	drs_label.size = Vector2(220, 40)
+	drs_label.modulate.a = 0.3
+	add_child(drs_label)
+
 func _build_minimap() -> void:
 	minimap_panel = Panel.new()
 	var sb := StyleBoxFlat.new()
@@ -285,6 +305,8 @@ func _process(_delta: float) -> void:
 	_update_best_lap()
 	_update_input_bars()
 	_update_position()
+	if is_f1_mode:
+		_update_drs()
 	if minimap_draw:
 		minimap_draw.queue_redraw()
 
@@ -338,6 +360,19 @@ func _update_position() -> void:
 func _update_input_bars() -> void:
 	throttle_bar.size.x = BAR_WIDTH * player_car.throttle_input
 	brake_bar.size.x = BAR_WIDTH * player_car.brake_input
+
+func _update_drs() -> void:
+	if not drs_label or not player_car:
+		return
+	if player_car.drs_active:
+		drs_label.add_theme_color_override("font_color", SUCCESS)
+		drs_label.modulate.a = 1.0
+	elif player_car.drs_available:
+		drs_label.add_theme_color_override("font_color", SECONDARY_ACCENT)
+		drs_label.modulate.a = 1.0
+	else:
+		drs_label.add_theme_color_override("font_color", TEXT_SECONDARY)
+		drs_label.modulate.a = 0.3
 
 # --- Signals ---
 

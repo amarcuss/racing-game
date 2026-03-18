@@ -24,5 +24,11 @@ func _physics_process(_delta: float) -> void:
 
 	car.set_inputs(throttle, braking, steer, handbrake)
 
+	# DRS activation — throttle must be held and DRS must be available
+	if car.drs_available and throttle > 0.5 and braking == 0.0:
+		car.drs_active = true
+	else:
+		car.drs_active = false
+
 	if InputManager.is_reset_pressed(player_index):
 		car.reset_to_track()

@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="CarData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://cars/car_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+car_name = "F1 Bull"
+tier = 4
+price = 9000
+description = "The Bull is the fastest car on the grid. Its dominant power unit and slippery aerodynamics deliver unmatched straight-line speed, but its aggressive setup demands a skilled hand through slow corners."
+
+max_speed_kph = 345.0
+drive_type = 1
+mass_kg = 785.0
+
+torque_low_rpm = 6300.0
+torque_peak_rpm = 8400.0
+torque_high_rpm = 5800.0
+
+drag_coefficient = 0.40
+downforce_coefficient = 0.82
+
+brake_force = 61.0
+brake_bias = 0.55
+
+weight_transfer_factor = 0.09
+
+drift_friction_slip = 1.9
+drift_steer_multiplier = 1.2
+normal_friction_slip = 4.0
+
+suspension_rest_length = 0.08
+suspension_stiffness = 116.0
+suspension_travel = 0.065
+damping_compression = 2.3
+damping_relaxation = 2.8
+
+wheel_radius = 0.33
+max_steering_angle = 0.31
+
+body_color = Color(0.05, 0.05, 0.35, 1)
+secondary_color = Color(1.0, 0.85, 0.0, 1)
+body_width = 2.0
+body_length = 5.5
+body_height = 0.35
+cabin_height = 0.4
+cabin_offset_z = -0.4
+hood_scoop = false
+rear_spoiler = true
+spoiler_height = 0.35

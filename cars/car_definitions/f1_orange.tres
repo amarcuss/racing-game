@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="CarData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://cars/car_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+car_name = "F1 Papaya"
+tier = 4
+price = 8200
+description = "The Papaya trades raw top speed for exceptional cornering grip and braking stability. Its high downforce setup and stiff suspension make it a weapon on tight, technical circuits."
+
+max_speed_kph = 336.0
+drive_type = 1
+mass_kg = 790.0
+
+torque_low_rpm = 5900.0
+torque_peak_rpm = 7800.0
+torque_high_rpm = 5400.0
+
+drag_coefficient = 0.47
+downforce_coefficient = 1.05
+
+brake_force = 64.0
+brake_bias = 0.58
+
+weight_transfer_factor = 0.07
+
+drift_friction_slip = 2.1
+drift_steer_multiplier = 1.25
+normal_friction_slip = 4.5
+
+suspension_rest_length = 0.08
+suspension_stiffness = 128.0
+suspension_travel = 0.055
+damping_compression = 2.7
+damping_relaxation = 3.2
+
+wheel_radius = 0.33
+max_steering_angle = 0.33
+
+body_color = Color(1.0, 0.55, 0.0, 1)
+secondary_color = Color(0.0, 0.3, 0.7, 1)
+body_width = 2.0
+body_length = 5.5
+body_height = 0.35
+cabin_height = 0.4
+cabin_offset_z = -0.4
+hood_scoop = false
+rear_spoiler = true
+spoiler_height = 0.35
