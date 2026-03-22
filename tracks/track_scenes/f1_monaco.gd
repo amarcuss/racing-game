@@ -5,7 +5,7 @@ extends Node3D
 ## All geometry built procedurally via ArrayMesh.
 
 # --- Track geometry constants ---
-const ROAD_WIDTH: float = 20.0
+const ROAD_WIDTH: float = 14.0
 const ROAD_Y: float = 0.15
 const NUM_SEGMENTS: int = 768
 const WALL_HEIGHT: float = 3.0
@@ -70,56 +70,45 @@ func _get_waypoints() -> Array[Dictionary]:
 
 	# === Start/finish straight heading east (y=0) ===
 	pts.append({"x": 0.0, "z": 0.0, "y": 0.0})
-	pts.append({"x": 120.0, "z": 0.0, "y": 0.0})
-	pts.append({"x": 240.0, "z": 0.0, "y": 0.0})
+	pts.append({"x": 150.0, "z": 0.0, "y": 0.0})
+	pts.append({"x": 300.0, "z": 0.0, "y": 0.0})
 
-	# === Sainte Devote — sweeping right heading north, uphill ===
-	pts.append({"x": 310.0, "z": -30.0, "y": 1.0})
-	pts.append({"x": 350.0, "z": -80.0, "y": 3.0})
-	pts.append({"x": 370.0, "z": -150.0, "y": 6.0})
+	# === Sainte Devote — wide sweeping right, uphill ===
+	pts.append({"x": 400.0, "z": -50.0, "y": 2.0})
+	pts.append({"x": 450.0, "z": -130.0, "y": 5.0})
+	pts.append({"x": 460.0, "z": -220.0, "y": 8.0})
 
 	# === Beau Rivage uphill heading north ===
-	pts.append({"x": 370.0, "z": -230.0, "y": 9.0})
-	pts.append({"x": 360.0, "z": -310.0, "y": 12.0})
+	pts.append({"x": 450.0, "z": -320.0, "y": 11.0})
+	pts.append({"x": 420.0, "z": -400.0, "y": 13.0})
 
-	# === Massenet curve — left turn heading west at hilltop ===
-	pts.append({"x": 330.0, "z": -370.0, "y": 14.0})
-	pts.append({"x": 280.0, "z": -400.0, "y": 15.0})
+	# === Massenet curve — wide left heading west ===
+	pts.append({"x": 370.0, "z": -460.0, "y": 14.5})
+	pts.append({"x": 300.0, "z": -500.0, "y": 15.0})
 
-	# === Casino Square hairpin — wide 180° at the top of the hill ===
-	pts.append({"x": 220.0, "z": -410.0, "y": 15.0})
-	pts.append({"x": 170.0, "z": -400.0, "y": 15.0})
-	pts.append({"x": 140.0, "z": -375.0, "y": 14.5})
+	# === Casino Square — wide U-turn at the top ===
+	pts.append({"x": 220.0, "z": -520.0, "y": 15.0})
+	pts.append({"x": 140.0, "z": -510.0, "y": 15.0})
+	pts.append({"x": 80.0, "z": -470.0, "y": 14.5})
 
 	# === Mirabeau — downhill heading south ===
-	pts.append({"x": 120.0, "z": -330.0, "y": 13.0})
-	pts.append({"x": 100.0, "z": -280.0, "y": 11.0})
+	pts.append({"x": 50.0, "z": -410.0, "y": 13.0})
+	pts.append({"x": 30.0, "z": -340.0, "y": 11.0})
 
-	# === Grand Hotel hairpin ===
-	pts.append({"x": 80.0, "z": -240.0, "y": 9.5})
-	pts.append({"x": 60.0, "z": -210.0, "y": 8.5})
+	# === Grand Hotel — wide gentle curve ===
+	pts.append({"x": 0.0, "z": -280.0, "y": 9.0})
+	pts.append({"x": -30.0, "z": -220.0, "y": 7.5})
 
-	# === Tunnel section — heading south ===
-	pts.append({"x": 50.0, "z": -160.0, "y": 7.0})
-	pts.append({"x": 40.0, "z": -110.0, "y": 5.5})
+	# === Tunnel section ===
+	pts.append({"x": -50.0, "z": -160.0, "y": 6.0})
+	pts.append({"x": -60.0, "z": -100.0, "y": 4.5})
 
-	# === Nouvelle chicane ===
-	pts.append({"x": 20.0, "z": -70.0, "y": 4.0})
-	pts.append({"x": -10.0, "z": -40.0, "y": 3.0})
+	# === Nouvelle — gentle S-curve heading south ===
+	pts.append({"x": -55.0, "z": -60.0, "y": 3.0})
 
-	# === Tabac — left turn heading east back toward start ===
-	pts.append({"x": -30.0, "z": -15.0, "y": 2.0})
-	pts.append({"x": -20.0, "z": 10.0, "y": 1.0})
-
-	# === Swimming pool chicane ===
-	pts.append({"x": 10.0, "z": 30.0, "y": 0.5})
-
-	# === Rascasse — right turn heading east ===
-	pts.append({"x": 50.0, "z": 40.0, "y": 0.5})
-	pts.append({"x": 90.0, "z": 35.0, "y": 0.0})
-
-	# === Anthony Noghes — back to pit straight ===
-	pts.append({"x": 130.0, "z": 20.0, "y": 0.0})
+	# === Tabac — sweeping right back toward pit straight ===
+	pts.append({"x": -40.0, "z": -40.0, "y": 2.0})
+	pts.append({"x": -20.0, "z": -30.0, "y": 1.0})
 
 	return pts
 
@@ -407,8 +396,8 @@ func _build_wall_side(points: Array[Dictionary], side: float, wall_name: String)
 func _build_ground() -> void:
 	var ground_mesh := CSGBox3D.new()
 	ground_mesh.name = "GroundMesh"
-	ground_mesh.size = Vector3(600, 0.05, 600)
-	ground_mesh.position = Vector3(170, -0.025, -190)
+	ground_mesh.size = Vector3(800, 0.05, 800)
+	ground_mesh.position = Vector3(200, -0.025, -250)
 	ground_mesh.use_collision = false
 	var ground_mat := StandardMaterial3D.new()
 	ground_mat.albedo_color = Color(0.35, 0.30, 0.22)
@@ -420,10 +409,10 @@ func _build_ground() -> void:
 	ground_body.name = "Ground"
 	ground_body.collision_layer = 1
 	ground_body.collision_mask = 0
-	ground_body.position = Vector3(170, -2.0, -190)
+	ground_body.position = Vector3(200, -2.0, -250)
 
 	var box := BoxShape3D.new()
-	box.size = Vector3(600, 1, 600)
+	box.size = Vector3(800, 1, 800)
 	var col := CollisionShape3D.new()
 	col.shape = box
 	ground_body.add_child(col)
@@ -532,7 +521,7 @@ func _build_harbor_water() -> void:
 	var water := CSGBox3D.new()
 	water.name = "HarborWater"
 	water.size = Vector3(400.0, 0.1, 150.0)
-	water.position = Vector3(100.0, -0.5, 120.0)
+	water.position = Vector3(50.0, -0.5, 160.0)
 	water.use_collision = false
 
 	var water_mat := StandardMaterial3D.new()

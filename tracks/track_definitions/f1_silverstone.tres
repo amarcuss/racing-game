@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tracks/track_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+track_name = "F1 Silverstone"
+description = "Home of the British Grand Prix — a fast, flowing circuit through the English countryside. High-speed sweepers at Maggotts-Becketts, long Hangar Straight, and technical infield sections."
+length_km = 5.9
+road_width = 16.0
+num_checkpoints = 12
+default_laps = 5
+difficulty = 3
+scene_path = "res://tracks/track_scenes/f1_silverstone.tscn"

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tracks/track_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+track_name = "Charlotte Motor Speedway"
+description = "A 2.4 km quad-oval intermediate speedway with 24° banking in the turns and 5° on the straights. The quintessential NASCAR track — a test of both speed and strategy."
+length_km = 2.4
+road_width = 18.0
+num_checkpoints = 4
+default_laps = 15
+difficulty = 2
+scene_path = "res://tracks/track_scenes/nascar_intermediate.tscn"

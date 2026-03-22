@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://f1_silverstone"]
+
+[ext_resource type="Script" path="res://tracks/track_scenes/f1_silverstone.gd" id="1"]
+
+[node name="F1Silverstone" type="Node3D"]
+script = ExtResource("1")

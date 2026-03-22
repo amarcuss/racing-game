@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://season_setup"]
+
+[ext_resource type="Script" path="res://ui/season/season_setup.gd" id="1"]
+
+[node name="SeasonSetup" type="Node"]
+script = ExtResource("1")

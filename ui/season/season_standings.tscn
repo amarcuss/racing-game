@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://season_standings"]
+
+[ext_resource type="Script" path="res://ui/season/season_standings.gd" id="1"]
+
+[node name="SeasonStandings" type="Node"]
+script = ExtResource("1")

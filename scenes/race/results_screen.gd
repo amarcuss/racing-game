@@ -13,6 +13,7 @@ var best_lap_label: Label
 var credits_label: Label
 var credits_target: int = 0
 var confetti: GPUParticles2D
+var season_standings_btn: Button
 
 const BG_DARK := Color("0A0E1A")
 const PRIMARY_ACCENT := Color("FF6B1A")
@@ -104,14 +105,20 @@ func _build_ui() -> void:
 
 	# Buttons
 	var btn_box := HBoxContainer.new()
-	btn_box.position = Vector2(610, 570)
-	btn_box.size = Vector2(700, 60)
+	btn_box.position = Vector2(510, 570)
+	btn_box.size = Vector2(900, 60)
 	btn_box.add_theme_constant_override("separation", 30)
 	container.add_child(btn_box)
 
 	var next_btn := _create_button("NEXT RACE", PRIMARY_ACCENT)
 	btn_box.add_child(next_btn)
 	next_btn.pressed.connect(_on_next_race)
+
+	# Season standings button (hidden by default, shown during season)
+	season_standings_btn = _create_button("STANDINGS", PRIMARY_ACCENT)
+	btn_box.add_child(season_standings_btn)
+	season_standings_btn.pressed.connect(_on_season_standings)
+	season_standings_btn.visible = false
 
 	var menu_btn := _create_button("MAIN MENU", SURFACE)
 	btn_box.add_child(menu_btn)
@@ -185,6 +192,10 @@ func show_results(car: Node, finish_position: int = 1) -> void:
 	}
 	SaveManager.record_race_result(result_dict)
 
+	# Season mode: show standings button (positions recorded later when race fully ends)
+	if GameManager.season_active and season_standings_btn:
+		season_standings_btn.visible = true
+
 	# Confetti for 1st place
 	if finish_position == 1 and confetti:
 		confetti.emitting = true
@@ -206,15 +217,56 @@ func _update_credits_display(progress: float) -> void:
 
 # --- Button actions ---
 
+func _on_season_standings() -> void:
+	Engine.time_scale = 1.0
+	# Ensure season positions are recorded before resetting
+	_ensure_season_recorded()
+	RaceManager.reset()
+	GameManager.transition_to_scene("res://ui/season/season_standings.tscn")
+
+func _ensure_season_recorded() -> void:
+	if not GameManager.season_active:
+		return
+	# Check if this round was already recorded
+	var expected_rounds: int = GameManager.season_current_round + 1
+	if GameManager.season_results.size() >= expected_rounds:
+		return
+	# Force position update and record
+	RaceManager._update_positions()
+	var best_lap_time: float = INF
+	var best_lap_car: Node = null
+	for car_node in RaceManager.registered_cars:
+		var lt: float = RaceManager.get_car_best_lap_time(car_node)
+		if lt > 0.0 and lt < best_lap_time:
+			best_lap_time = lt
+			best_lap_car = car_node
+	var finish_positions: Array = []
+	for car_node in RaceManager.registered_cars:
+		var pos: int = RaceManager.get_finish_position(car_node)
+		var ci: int = car_node.car_index
+		var slot: int = car_node.driver_slot
+		if ci >= 0:
+			var entry: Dictionary = {"car_index": ci, "driver_slot": slot, "position": pos}
+			if car_node == best_lap_car:
+				entry["fastest_lap"] = true
+			finish_positions.append(entry)
+	GameManager.record_season_result(finish_positions)
+
 func _on_next_race() -> void:
 	Engine.time_scale = 1.0
+	if GameManager.season_active:
+		_on_season_standings()
+		return
 	RaceManager.reset()
 	restart_pressed.emit()
 	get_tree().reload_current_scene()
 
 func _on_main_menu() -> void:
 	Engine.time_scale = 1.0
+	_ensure_season_recorded()
 	menu_pressed.emit()
+	if GameManager.season_active:
+		GameManager.end_season()
 	GameManager.go_to_main_menu()
 
 # --- Helpers ---

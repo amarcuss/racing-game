@@ -99,6 +99,8 @@ func _spawn_players() -> void:
 	# Player 1
 	var p1_car: VehicleBody3D = car_scene.instantiate()
 	p1_car.car_data = GameManager.get_selected_car_data()
+	p1_car.car_index = GameManager.selected_car_index
+	p1_car.driver_slot = 1
 	if track_node.has_method("get_ai_path"):
 		p1_car.track_path = track_node.get_ai_path()
 	var spawn0: Transform3D = track_node.get_spawn_transform(0)
@@ -115,6 +117,8 @@ func _spawn_players() -> void:
 	# Player 2
 	var p2_car: VehicleBody3D = car_scene.instantiate()
 	p2_car.car_data = GameManager.get_p2_car_data()
+	p2_car.car_index = GameManager.p2_car_index
+	p2_car.driver_slot = 1
 	if track_node.has_method("get_ai_path"):
 		p2_car.track_path = track_node.get_ai_path()
 	var spawn1: Transform3D = track_node.get_spawn_transform(1)
@@ -146,11 +150,14 @@ func _spawn_ai_cars() -> void:
 		difficulties.append(clampi(d, 0, 2))
 	difficulties.shuffle()
 
+	var ai_car_indices: Array[int] = GameManager.get_car_indices_for_mode()
+
 	for i in range(ai_total):
 		var ai_car: VehicleBody3D = car_scene.instantiate()
-		var ai_car_indices: Array[int] = GameManager.get_car_indices_for_mode()
-		var car_index: int = ai_car_indices[randi() % ai_car_indices.size()]
+		var car_index: int = ai_car_indices[i % ai_car_indices.size()]
 		ai_car.car_data = GameManager.get_car_data(car_index)
+		ai_car.car_index = car_index
+		ai_car.driver_slot = 1
 		if ai_path:
 			ai_car.track_path = ai_path
 

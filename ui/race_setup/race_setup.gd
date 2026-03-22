@@ -41,6 +41,9 @@ func _ready() -> void:
 			ai_count_value = mini(GameManager.ai_count, 5)
 			if ai_count_value > 5:
 				ai_count_value = 5
+		GameManager.RacingMode.NASCAR:
+			ai_count_value = 19
+			difficulty_value = 1
 		_:
 			ai_count_value = mini(GameManager.ai_count, 7)
 	GameManager.ai_count = ai_count_value
@@ -86,8 +89,12 @@ func _build_ui() -> void:
 	panel_sb.bg_color = BG_MID
 	panel_sb.set_corner_radius_all(12)
 
-	# Laps spinner — F1 allows more laps
-	var max_laps: int = 20 if GameManager.racing_mode == GameManager.RacingMode.F1 else 10
+	# Laps spinner — F1/NASCAR allow more laps
+	var max_laps: int = 10
+	if GameManager.racing_mode == GameManager.RacingMode.F1:
+		max_laps = 20
+	elif GameManager.racing_mode == GameManager.RacingMode.NASCAR:
+		max_laps = 50
 	_create_spinner(panel, "LAPS", 50, laps_value, 1, max_laps, func(v: int): laps_value = v; _update_display())
 	laps_row = panel.get_child(panel.get_child_count() - 1) as HBoxContainer
 	laps_label = laps_row.get_child(1) as Label
@@ -103,6 +110,7 @@ func _build_ui() -> void:
 	match GameManager.racing_mode:
 		GameManager.RacingMode.F1: max_ai = 19
 		GameManager.RacingMode.BAJA: max_ai = 5
+		GameManager.RacingMode.NASCAR: max_ai = 19
 	_create_spinner(panel, "AI OPPONENTS", 150, ai_count_value, 0, max_ai, func(v: int): ai_count_value = v; _update_display())
 	ai_label = panel.get_child(panel.get_child_count() - 1).get_child(1) as Label
 
@@ -161,28 +169,28 @@ func _create_spinner(parent: Control, label_text: String, y_pos: float, initial:
 	value_label.custom_minimum_size = Vector2(120, 60)
 	row.add_child(value_label)
 
-	var current_val: int = initial
+	var state: Array = [initial]
 
 	var minus_btn := _create_small_button("<")
 	row.add_child(minus_btn)
 	minus_btn.pressed.connect(func():
-		current_val = maxi(current_val - 1, min_val)
+		state[0] = maxi(state[0] - 1, min_val)
 		if is_difficulty:
-			value_label.text = DIFFICULTY_NAMES[current_val]
+			value_label.text = DIFFICULTY_NAMES[state[0]]
 		else:
-			value_label.text = str(current_val)
-		on_change.call(current_val)
+			value_label.text = str(state[0])
+		on_change.call(state[0])
 	)
 
 	var plus_btn := _create_small_button(">")
 	row.add_child(plus_btn)
 	plus_btn.pressed.connect(func():
-		current_val = mini(current_val + 1, max_val)
+		state[0] = mini(state[0] + 1, max_val)
 		if is_difficulty:
-			value_label.text = DIFFICULTY_NAMES[current_val]
+			value_label.text = DIFFICULTY_NAMES[state[0]]
 		else:
-			value_label.text = str(current_val)
-		on_change.call(current_val)
+			value_label.text = str(state[0])
+		on_change.call(state[0])
 	)
 
 func _update_display() -> void:

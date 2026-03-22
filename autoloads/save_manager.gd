@@ -25,6 +25,9 @@ func _ready() -> void:
 func _load_profile() -> void:
 	if FileAccess.file_exists(PROFILE_PATH):
 		var file := FileAccess.open(PROFILE_PATH, FileAccess.READ)
+		if not file:
+			profile = _profile_script.new()
+			return
 		var text: String = file.get_as_text()
 		file.close()
 		var json := JSON.new()

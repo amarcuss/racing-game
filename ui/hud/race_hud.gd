@@ -123,6 +123,21 @@ func _build_top_bar() -> void:
 	timer_label.add_theme_color_override("font_color", TEXT_PRIMARY)
 	hbox.add_child(timer_label)
 
+	# Season GP name (right side of top bar)
+	if GameManager.season_active:
+		var calendar: Array = GameManager.get_season_calendar()
+		if GameManager.season_current_round >= calendar.size():
+			return
+		var round_data: Dictionary = calendar[GameManager.season_current_round]
+		var gp_label := Label.new()
+		gp_label.text = "R%d  %s" % [GameManager.season_current_round + 1, round_data.name]
+		gp_label.add_theme_font_size_override("font_size", 22)
+		gp_label.add_theme_color_override("font_color", PRIMARY_ACCENT)
+		gp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		gp_label.position = Vector2(screen_offset_x, 16)
+		gp_label.size = Vector2(screen_width - 20, 30)
+		bar.add_child(gp_label)
+
 func _build_info_labels() -> void:
 	best_lap_label = Label.new()
 	best_lap_label.text = ""

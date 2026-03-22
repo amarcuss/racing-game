@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tracks/track_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+track_name = "Daytona Superspeedway"
+description = "A massive 4.0 km D-shaped superspeedway with 31° banking in the turns. Pack racing and drafting are essential. Wide 20m racing surface allows for three-wide battles."
+length_km = 4.0
+road_width = 20.0
+num_checkpoints = 4
+default_laps = 20
+difficulty = 2
+scene_path = "res://tracks/track_scenes/nascar_superspeedway.tscn"

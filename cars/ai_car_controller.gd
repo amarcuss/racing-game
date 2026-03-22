@@ -17,6 +17,9 @@ var perimeter: float = 0.0
 var last_offset: float = 0.0
 var open_path: bool = false
 
+# Per-car lateral offset — varies racing line across the track width
+var lateral_offset: float = 0.0
+
 # Difficulty parameters
 var speed_factor: float = 0.88
 var brake_distance_factor: float = 1.1
@@ -43,6 +46,8 @@ func setup(path: Path3D, track_perimeter: float) -> void:
 	ai_path = path
 	curve = path.curve
 	perimeter = track_perimeter
+	# Assign a random lateral offset so AI cars spread across the track
+	lateral_offset = randf_range(-3.0, 3.0)
 
 func _apply_difficulty() -> void:
 	match difficulty:
@@ -95,17 +100,18 @@ func _physics_process(delta: float) -> void:
 	# --- Steering look-ahead: scales with speed ---
 	var steer_look_ahead: float
 	if _is_f1():
-		steer_look_ahead = lerpf(25.0, 70.0, speed_ratio)
+		# Shorter look-ahead at low speed for tight hairpins, longer at high speed
+		steer_look_ahead = lerpf(15.0, 70.0, speed_ratio)
 	else:
 		steer_look_ahead = lerpf(20.0, look_ahead_base, speed_ratio)
 
 	var steer_input: float = _compute_steering(offset, steer_look_ahead)
 
-	# Smooth steering only at high speed (>200 kph) to prevent oscillation,
+	# Smooth steering only at high speed (>220 kph) to prevent oscillation,
 	# but allow full authority at low speed for hairpins
-	if _is_f1() and speed_kph > 200.0:
-		var high_speed_ratio: float = clampf((speed_kph - 200.0) / 100.0, 0.0, 1.0)
-		var smooth_alpha: float = lerpf(1.0, 0.15, high_speed_ratio)
+	if _is_f1() and speed_kph > 220.0:
+		var high_speed_ratio: float = clampf((speed_kph - 220.0) / 80.0, 0.0, 1.0)
+		var smooth_alpha: float = lerpf(1.0, 0.2, high_speed_ratio)
 		steer_input = lerpf(prev_steer, steer_input, clampf(smooth_alpha * 120.0 * delta, 0.0, 1.0))
 	prev_steer = steer_input
 
@@ -141,6 +147,15 @@ func _physics_process(delta: float) -> void:
 		else:
 			throttle = 0.3
 
+	# --- Car avoidance: steer around and brake behind nearby cars ---
+	var avoidance: Dictionary = _compute_avoidance()
+	steer_input += avoidance.steer
+	steer_input = clampf(steer_input, -1.0, 1.0)
+	if avoidance.brake > 0.0:
+		var slow_factor: float = 1.0 - avoidance.brake
+		throttle *= slow_factor
+		braking = maxf(braking, avoidance.brake * 0.6)
+
 	car.set_inputs(throttle, braking, steer_input, false)
 
 	# AI activates DRS when available and on throttle
@@ -150,6 +165,57 @@ func _physics_process(delta: float) -> void:
 		car.drs_active = false
 
 	_check_stuck(delta)
+
+func _compute_avoidance() -> Dictionary:
+	## Check all registered race cars for proximity; return steer offset and brake amount.
+	var result := {"steer": 0.0, "brake": 0.0}
+	if not car:
+		return result
+
+	var my_pos: Vector3 = car.global_position
+	var my_fwd: Vector3 = -car.global_transform.basis.z  # car forward is -Z
+	var my_right: Vector3 = car.global_transform.basis.x
+
+	for other in RaceManager.registered_cars:
+		if other == car:
+			continue
+		var other_pos: Vector3 = other.global_position
+		var to_other: Vector3 = other_pos - my_pos
+		var dist: float = to_other.length()
+
+		# Only care about cars within 15m
+		if dist > 15.0 or dist < 0.1:
+			continue
+
+		var to_other_norm: Vector3 = to_other / dist
+		var ahead_dot: float = to_other_norm.dot(my_fwd)
+		var side_dot: float = to_other_norm.dot(my_right)
+
+		# Only avoid cars that are ahead or beside us (not behind)
+		if ahead_dot < -0.2:
+			continue
+
+		# How much to steer away — stronger when closer and more directly ahead
+		var proximity: float = 1.0 - dist / 15.0  # 1.0 = touching, 0.0 = 15m away
+		var ahead_factor: float = clampf(ahead_dot, 0.0, 1.0)
+
+		# Steer away from the side the other car is on
+		var steer_away: float
+		if absf(side_dot) < 0.1:
+			# Directly ahead — dodge based on our lateral offset preference
+			steer_away = signf(lateral_offset) if absf(lateral_offset) > 0.5 else 1.0
+		else:
+			steer_away = -signf(side_dot)
+
+		result.steer += steer_away * proximity * ahead_factor * 0.5
+
+		# Brake if car is very close and directly ahead
+		if ahead_dot > 0.7 and dist < 8.0:
+			result.brake = maxf(result.brake, proximity * ahead_factor * 0.8)
+
+	result.steer = clampf(result.steer, -0.5, 0.5)
+	result.brake = clampf(result.brake, 0.0, 1.0)
+	return result
 
 func _find_closest_offset() -> float:
 	if not curve or curve.point_count < 2:
@@ -213,6 +279,22 @@ func _compute_steering(offset: float, look_ahead: float) -> float:
 		target_offset = fposmod(offset + look_ahead, curve_length)
 	var target_pos: Vector3 = curve.sample_baked(target_offset)
 
+	# Apply lateral offset so AI cars don't all follow the exact same line
+	if absf(lateral_offset) > 0.1:
+		# Get the curve's right direction at the target point
+		var ahead_off: float
+		if open_path:
+			ahead_off = clampf(target_offset + 2.0, 0.0, curve_length)
+		else:
+			ahead_off = fposmod(target_offset + 2.0, curve_length)
+		var ahead_pt: Vector3 = curve.sample_baked(ahead_off)
+		var fwd_vec: Vector3 = ahead_pt - target_pos
+		if fwd_vec.length() < 0.001:
+			fwd_vec = Vector3(0, 0, -1)
+		var fwd_dir: Vector3 = fwd_vec.normalized()
+		var right_dir: Vector3 = Vector3.UP.cross(fwd_dir).normalized()
+		target_pos += right_dir * lateral_offset
+
 	# Convert to car-local space
 	var local: Vector3 = car.global_transform.affine_inverse() * target_pos
 	var steer_angle: float = atan2(local.x, -local.z)
@@ -259,8 +341,12 @@ func _compute_target_speed(offset: float, look_ahead: float, max_speed: float) -
 		var p2: Vector3 = curve.sample_baked(s2)
 
 		# Flatten to XZ
-		var dir1 := Vector3(p1.x - p0.x, 0.0, p1.z - p0.z).normalized()
-		var dir2 := Vector3(p2.x - p1.x, 0.0, p2.z - p1.z).normalized()
+		var raw_dir1 := Vector3(p1.x - p0.x, 0.0, p1.z - p0.z)
+		var raw_dir2 := Vector3(p2.x - p1.x, 0.0, p2.z - p1.z)
+		if raw_dir1.length() < 0.001 or raw_dir2.length() < 0.001:
+			continue
+		var dir1 := raw_dir1.normalized()
+		var dir2 := raw_dir2.normalized()
 
 		var dot: float = clampf(dir1.dot(dir2), -1.0, 1.0)
 		var curvature: float = acos(dot)
@@ -321,8 +407,10 @@ func _unstick() -> void:
 	else:
 		ahead_offset = fposmod(offset + 2.0, curve_length)
 	var ahead_pos: Vector3 = curve.sample_baked(ahead_offset)
-	var forward: Vector3 = (ahead_pos - pos).normalized()
+	var forward: Vector3 = (ahead_pos - pos)
 	forward.y = 0.0
+	if forward.length() < 0.001:
+		forward = Vector3(0, 0, -1)
 	forward = forward.normalized()
 
 	car.linear_velocity = Vector3.ZERO

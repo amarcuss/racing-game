@@ -83,6 +83,9 @@ func _on_resume() -> void:
 
 func _on_restart() -> void:
 	get_tree().paused = false
+	# If restarting a season race, undo any recorded result for this round
+	if GameManager.season_active:
+		GameManager.undo_current_round_result()
 	RaceManager.reset()
 	restarted.emit()
 	get_tree().reload_current_scene()

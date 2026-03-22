@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tracks/track_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+track_name = "Airport Circuit"
+description = "A 2.5 km street circuit carved through an active airport. Race down a massive runway straight, weave through taxiways past hangars and parked jets, and blast past the control tower. Wide tarmac with orange jersey barriers."
+length_km = 2.5
+road_width = 16.0
+num_checkpoints = 6
+default_laps = 5
+difficulty = 2
+scene_path = "res://tracks/track_scenes/airport_circuit.tscn"

@@ -63,6 +63,8 @@ func _spawn_player() -> void:
 	var car_scene: PackedScene = preload("res://cars/car_base.tscn")
 	player_car = car_scene.instantiate()
 	player_car.car_data = GameManager.get_selected_car_data()
+	player_car.car_index = GameManager.selected_car_index
+	player_car.driver_slot = 1
 	if track_node.has_method("get_ai_path"):
 		player_car.track_path = track_node.get_ai_path()
 
@@ -96,13 +98,47 @@ func _spawn_ai_cars() -> void:
 		difficulties.append(clampi(d, 0, 2))
 	difficulties.shuffle()
 
+	var ai_car_indices: Array[int] = GameManager.get_car_indices_for_mode()
+
+	# Season mode AI list
+	var season_ai_list: Array = []  # Array of {car_index, driver_slot}
+	if GameManager.season_active:
+		var season_car_indices: Array[int] = GameManager.get_season_car_indices()
+		var rival_indices: Array = []
+		for ci in season_car_indices:
+			if ci != GameManager.season_player_car_index:
+				rival_indices.append(ci)
+		rival_indices.shuffle()
+
+		if GameManager.is_team_season():
+			# Team mode: 2 cars per team, interleaved so teammates aren't adjacent
+			for ci in rival_indices:
+				season_ai_list.append({"car_index": ci, "driver_slot": 1})
+			var d2_list: Array = []
+			d2_list.append({"car_index": GameManager.season_player_car_index, "driver_slot": 2})
+			for ci in rival_indices:
+				d2_list.append({"car_index": ci, "driver_slot": 2})
+			d2_list.shuffle()
+			season_ai_list.append_array(d2_list)
+		else:
+			# Individual mode: 1 car per entry
+			for ci in rival_indices:
+				season_ai_list.append({"car_index": ci, "driver_slot": 1})
+
 	for i in range(ai_total):
 		var ai_car: VehicleBody3D = car_scene.instantiate()
 
-		# Pick a random car definition from available cars
-		var ai_car_indices: Array[int] = GameManager.get_car_indices_for_mode()
-		var car_index: int = ai_car_indices[randi() % ai_car_indices.size()]
+		var car_index: int
+		var driver_slot: int = 1
+		if GameManager.season_active and i < season_ai_list.size():
+			car_index = season_ai_list[i].car_index
+			driver_slot = season_ai_list[i].driver_slot
+		else:
+			# Cycle through available cars evenly (ensures ~equal distribution)
+			car_index = ai_car_indices[i % ai_car_indices.size()]
 		ai_car.car_data = GameManager.get_car_data(car_index)
+		ai_car.car_index = car_index
+		ai_car.driver_slot = driver_slot
 		if ai_path:
 			ai_car.track_path = ai_path
 
@@ -184,9 +220,39 @@ func _on_race_finished(car: Node) -> void:
 	_show_player_results()
 
 func _on_race_state_changed(new_state: int) -> void:
-	# Handle timeout — show results even if player didn't finish
-	if new_state == RaceManager.RaceState.FINISHED and not player_results_shown:
-		_show_player_results()
+	if new_state == RaceManager.RaceState.FINISHED:
+		# Record season positions if not already done
+		if GameManager.season_active:
+			_record_season_final_positions()
+		# Handle timeout — show results even if player didn't finish
+		if not player_results_shown:
+			_show_player_results()
+
+var season_recorded: bool = false
+
+func _record_season_final_positions() -> void:
+	if season_recorded:
+		return
+	season_recorded = true
+	# Find fastest lap car
+	var best_lap_time: float = INF
+	var best_lap_car: Node = null
+	for car_node in RaceManager.registered_cars:
+		var lt: float = RaceManager.get_car_best_lap_time(car_node)
+		if lt > 0.0 and lt < best_lap_time:
+			best_lap_time = lt
+			best_lap_car = car_node
+	var finish_positions: Array = []
+	for car_node in RaceManager.registered_cars:
+		var pos: int = RaceManager.get_finish_position(car_node)
+		var ci: int = car_node.car_index
+		var slot: int = car_node.driver_slot
+		if ci >= 0:
+			var entry: Dictionary = {"car_index": ci, "driver_slot": slot, "position": pos}
+			if car_node == best_lap_car:
+				entry["fastest_lap"] = true
+			finish_positions.append(entry)
+	GameManager.record_season_result(finish_positions)
 
 func _wire_collision_shake() -> void:
 	player_car.collision_occurred.connect(func(speed: float):
@@ -219,3 +285,16 @@ func _show_player_results() -> void:
 	if controller:
 		controller.set_physics_process(false)
 	player_car.set_inputs(0.0, 0.0, 0.0, false)
+	# Season: wait a moment for other cars to settle, then record positions
+	if GameManager.season_active and not season_recorded:
+		var record_timer := Timer.new()
+		record_timer.wait_time = 3.0
+		record_timer.one_shot = true
+		record_timer.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(record_timer)
+		record_timer.timeout.connect(func():
+			RaceManager._update_positions()
+			_record_season_final_positions()
+			record_timer.queue_free()
+		)
+		record_timer.start()

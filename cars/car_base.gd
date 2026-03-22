@@ -7,6 +7,8 @@ extends VehicleBody3D
 signal collision_occurred(speed: float)
 
 @export var car_data: Resource  # CarData
+var car_index: int = -1  # Index into GameManager.CAR_PATHS
+var driver_slot: int = 1  # 1 or 2 (teammate pairs per team)
 
 # --- Node references ---
 var wheel_fl: VehicleWheel3D
@@ -339,8 +341,10 @@ func reset_to_track() -> void:
 		# Get forward direction from curve
 		var ahead_offset: float = fposmod(offset + 2.0, curve_length)
 		var ahead_pos: Vector3 = curve.sample_baked(ahead_offset)
-		var forward: Vector3 = (ahead_pos - pos).normalized()
+		var forward: Vector3 = (ahead_pos - pos)
 		forward.y = 0.0
+		if forward.length() < 0.001:
+			forward = Vector3(0, 0, -1)
 		forward = forward.normalized()
 
 		var z_axis: Vector3 = -forward
@@ -373,6 +377,8 @@ func _build_car_mesh() -> void:
 			mesh_script = load("res://cars/car_meshes/buggy_mesh.gd")
 		8:
 			mesh_script = load("res://cars/car_meshes/trophy_truck_mesh.gd")
+		9:
+			mesh_script = load("res://cars/car_meshes/stock_car_mesh.gd")
 		_:
 			mesh_script = load("res://cars/car_meshes/sedan_mesh.gd")
 
@@ -514,8 +520,11 @@ func _fill_audio_buffer(delta: float) -> void:
 	_engine_rpm_norm = lerpf(_engine_rpm_norm, speed_ratio, 5.0 * delta)
 
 	# Engine frequency — F1 cars have a higher-pitched V6 turbo-hybrid
+	# Stock cars (tier 9) have deep V8 rumble — low frequency range
 	if car_data.tier == 4:
 		_engine_target_freq = lerpf(60.0, 280.0, _engine_rpm_norm)
+	elif car_data.tier == 9:
+		_engine_target_freq = lerpf(20.0, 100.0, _engine_rpm_norm)
 	else:
 		_engine_target_freq = lerpf(25.0, 120.0, _engine_rpm_norm)
 	_engine_current_freq = lerpf(_engine_current_freq, _engine_target_freq, 0.12)
@@ -546,9 +555,12 @@ func _fill_audio_buffer(delta: float) -> void:
 	var increment: float = _engine_current_freq / sample_rate
 
 	# Cascaded low-pass: opens more for F1's higher-pitched whine
+	# Stock cars use even lower cutoff for deep bass rumble
 	var lp_alpha: float
 	if car_data.tier == 4:
 		lp_alpha = clampf(lerpf(0.12, 0.35, _engine_rpm_norm), 0.10, 0.40)
+	elif car_data.tier == 9:
+		lp_alpha = clampf(lerpf(0.04, 0.14, _engine_rpm_norm), 0.03, 0.18)
 	else:
 		lp_alpha = clampf(lerpf(0.06, 0.18, _engine_rpm_norm), 0.04, 0.25)
 

@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="CarData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://cars/car_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+car_name = "Green Machine Sedan"
+tier = 1
+price = 0
+description = "A reliable starter car. Balanced handling with moderate speed. Front-wheel drive keeps things predictable."
+max_speed_kph = 185.0
+drive_type = 0
+mass_kg = 1200.0
+torque_low_rpm = 3000.0
+torque_peak_rpm = 4500.0
+torque_high_rpm = 2500.0
+drag_coefficient = 0.38
+downforce_coefficient = 0.05
+brake_force = 35.0
+brake_bias = 0.65
+weight_transfer_factor = 0.15
+drift_friction_slip = 1.5
+drift_steer_multiplier = 1.5
+normal_friction_slip = 2.5
+suspension_rest_length = 0.2
+suspension_stiffness = 45.0
+suspension_travel = 0.15
+damping_compression = 1.2
+damping_relaxation = 1.5
+wheel_radius = 0.35
+max_steering_angle = 0.38
+body_color = Color(0.1, 0.65, 0.2, 1)
+secondary_color = Color(0.05, 0.35, 0.1, 1)
+body_width = 1.8
+body_length = 4.2
+body_height = 0.6
+cabin_height = 0.6
+cabin_offset_z = 0.0
+hood_scoop = false
+rear_spoiler = false
+spoiler_height = 0.0

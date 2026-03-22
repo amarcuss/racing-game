@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="CarData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://cars/car_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+car_name = "Red Buggy"
+tier = 7
+price = 3500
+description = "Lightweight open-frame desert buggy with roll cage. Nimble handling and big suspension travel make it perfect for rough terrain."
+max_speed_kph = 168.0
+drive_type = 2
+mass_kg = 1050.0
+torque_low_rpm = 3200.0
+torque_peak_rpm = 4500.0
+torque_high_rpm = 2800.0
+drag_coefficient = 0.38
+downforce_coefficient = 0.06
+brake_force = 34.0
+brake_bias = 0.6
+weight_transfer_factor = 0.12
+drift_friction_slip = 1.5
+drift_steer_multiplier = 1.5
+normal_friction_slip = 2.4
+suspension_rest_length = 0.2
+suspension_stiffness = 45.0
+suspension_travel = 0.15
+damping_compression = 1.2
+damping_relaxation = 1.5
+wheel_radius = 0.37
+max_steering_angle = 0.42
+body_color = Color(0.85, 0.15, 0.1, 1)
+secondary_color = Color(0.2, 0.2, 0.2, 1)
+body_width = 1.9
+body_length = 3.8
+body_height = 0.5
+cabin_height = 0.4
+cabin_offset_z = 0.05
+hood_scoop = false
+rear_spoiler = false
+spoiler_height = 0.0

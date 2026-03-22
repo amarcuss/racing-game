@@ -15,8 +15,9 @@ var car_pivot: Node3D
 var sub_viewport: SubViewport
 var btn_box: VBoxContainer
 var mode_label: Label
+var _season_btn: Button
 
-const MODE_NAMES: Array[String] = ["STREET RACING", "F1", "BAJA 1000"]
+const MODE_NAMES: Array[String] = ["STREET RACING", "F1", "DESERT RALLY", "NASCAR"]
 
 func _ready() -> void:
 	layer = 10
@@ -116,6 +117,11 @@ func _build_ui() -> void:
 	var quick_race_btn := _create_button("QUICK RACE", PRIMARY_ACCENT)
 	btn_box.add_child(quick_race_btn)
 	quick_race_btn.pressed.connect(_on_quick_race)
+
+	var season_btn := _create_button("SEASON", PRIMARY_ACCENT)
+	btn_box.add_child(season_btn)
+	season_btn.pressed.connect(_on_season)
+	_season_btn = season_btn
 
 	var garage_btn := _create_button("GARAGE", SURFACE)
 	btn_box.add_child(garage_btn)
@@ -234,6 +240,8 @@ func _create_car_visual(parent: Node3D, car_index: int) -> void:
 			mesh_script = load("res://cars/car_meshes/buggy_mesh.gd")
 		8:
 			mesh_script = load("res://cars/car_meshes/trophy_truck_mesh.gd")
+		9:
+			mesh_script = load("res://cars/car_meshes/stock_car_mesh.gd")
 		_:
 			mesh_script = load("res://cars/car_meshes/sedan_mesh.gd")
 
@@ -267,6 +275,9 @@ func _on_mode_next() -> void:
 
 func _on_quick_race() -> void:
 	GameManager.transition_to_scene("res://ui/player_select/player_select.tscn")
+
+func _on_season() -> void:
+	GameManager.transition_to_scene("res://ui/season/season_setup.tscn")
 
 func _on_garage() -> void:
 	GameManager.transition_to_scene("res://ui/garage/garage.tscn")

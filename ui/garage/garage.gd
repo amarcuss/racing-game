@@ -348,6 +348,7 @@ func _update_car_preview(car_index: int) -> void:
 		4: mesh_script = load("res://cars/car_meshes/f1_mesh.gd")
 		7: mesh_script = load("res://cars/car_meshes/buggy_mesh.gd")
 		8: mesh_script = load("res://cars/car_meshes/trophy_truck_mesh.gd")
+		9: mesh_script = load("res://cars/car_meshes/stock_car_mesh.gd")
 		_: mesh_script = load("res://cars/car_meshes/sedan_mesh.gd")
 
 	mesh_script.build(body_mesh, car_data, wheels)
